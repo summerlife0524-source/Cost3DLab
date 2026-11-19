@@ -446,9 +446,10 @@ function chapterBody(ch) {
   const items = ch.items.map(function (it, i) {
     const key = ch.id + '-i' + i;
     const read = state.read[key];
+    const fig = (typeof renderItemFigure === 'function') ? renderItemFigure(ch.id, i) : '';
     return '<div class="kp' + (read ? ' read' : '') + '" data-read="' + key + '">' +
       '<div class="kp-head"><h4>' + it.t + '</h4><button class="kp-btn">' + (read ? '已读' : '标记已读') + '</button></div>' +
-      '<p>' + it.c + '</p></div>';
+      '<p>' + it.c + '</p>' + fig + '</div>';
   }).join('');
   const comps = (ch.comps || []).map(function (cid) {
     return '<button class="chip" data-goto="' + cid + '">' + COMP_MAP[cid].name + '</button>';
