@@ -120,9 +120,11 @@ const Lab = (function () {
 
     // ---------- 柱 ----------
     cols.forEach(function (c) {
-      box('column', 0.4, 6.91, 0.4, c[0], 3.15, c[1], C.concrete2, { part: '框架柱' });
+      const cx = c[0] > 0 ? 2.78 : -2.78;
+      const cz = c[1] > 0 ? 1.78 : -1.78;
+      box('column', 0.4, 6.91, 0.4, cx, 3.15, cz, C.concrete2, { part: '框架柱' });
       // 柱顶节点板（视觉装饰）
-      box('column', 0.5, 0.09, 0.5, c[0], 6.585, c[1], C.concrete, { part: '柱帽' });
+      box('column', 0.5, 0.09, 0.5, cx, 6.585, cz, C.concrete, { part: '柱帽' });
     });
 
     // ---------- 梁、板 ----------
@@ -144,14 +146,14 @@ const Lab = (function () {
     box('wall', 0.6, 3.37, 0.2, 2.7, 1.68, 1.9, C.wall, wallOpt);
     // 一层：z=-2 后墙
     box('wall', 6.0, 3.37, 0.2, 0, 1.68, -1.9, C.wall, wallOpt);
-    // 一层：x=±3 侧墙
-    box('wall', 0.2, 3.37, 3.6, -2.9, 1.68, 0, C.wall, wallOpt);
-    box('wall', 0.2, 3.37, 3.6, 2.9, 1.68, 0, C.wall, wallOpt);
-    // 二层
-    box('wall', 6.0, 3.25, 0.2, 0, 4.98, 1.9, C.wall2, wallOpt);
-    box('wall', 6.0, 3.25, 0.2, 0, 4.98, -1.9, C.wall2, wallOpt);
-    box('wall', 0.2, 3.25, 3.6, -2.9, 4.98, 0, C.wall2, wallOpt);
-    box('wall', 0.2, 3.25, 3.6, 2.9, 4.98, 0, C.wall2, wallOpt);
+    // 一层：x=±3 侧墙（略外移并加深，避免与前后墙、柱外表面共面产生闪烁）
+    box('wall', 0.2, 3.37, 3.7, -2.92, 1.68, 0, C.wall, wallOpt);
+    box('wall', 0.2, 3.37, 3.7, 2.92, 1.68, 0, C.wall, wallOpt);
+    // 二层（底边压在一层墙顶之上，避免两面共面）
+    box('wall', 6.0, 3.24, 0.2, 0, 4.99, 1.9, C.wall2, wallOpt);
+    box('wall', 6.0, 3.24, 0.2, 0, 4.99, -1.9, C.wall2, wallOpt);
+    box('wall', 0.2, 3.24, 3.7, -2.92, 4.99, 0, C.wall2, wallOpt);
+    box('wall', 0.2, 3.24, 3.7, 2.92, 4.99, 0, C.wall2, wallOpt);
 
     // ---------- 门窗 ----------
     box('door', 1.2, 2.1, 0.06, 1.8, 1.05, 1.9, C.doorWood, { part: '门' });
@@ -475,13 +477,13 @@ const Lab = (function () {
     else { sceneKey = 'building'; buildBuilding(); }
     // 分场景灯光：房建亮一点，公路/水利压暗避免大面积混凝土过曝
     if (lights) {
-      if (sceneKey === 'building') { lights.hemi.intensity = 0.55; lights.dir.intensity = 0.66; lights.fill.intensity = 0.22; }
+      if (sceneKey === 'building') { lights.hemi.intensity = 0.6; lights.dir.intensity = 0.72; lights.fill.intensity = 0.24; }
       else if (sceneKey === 'highway') { lights.hemi.intensity = 0.66; lights.dir.intensity = 0.78; lights.fill.intensity = 0.26; }
       else { lights.hemi.intensity = 0.62; lights.dir.intensity = 0.72; lights.fill.intensity = 0.24; }
     }
     if (renderer && THREE.ACESFilmicToneMapping !== undefined) {
-      if (sceneKey === 'building') { renderer.toneMapping = THREE.NoToneMapping; renderer.toneMappingExposure = 1; }
-      else { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05; }
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = sceneKey === 'building' ? 1.2 : 1.05;
     }
     // 场景切换后重置相机
     const ps = CAM_PRESET[sceneKey] || CAM_PRESET.building;
@@ -524,7 +526,7 @@ const Lab = (function () {
     scene.background = new THREE.Color(0x0a1420);
     scene.fog = new THREE.Fog(0x0a1420, 30, 60);
 
-    camera = new THREE.PerspectiveCamera(42, el.clientWidth / el.clientHeight, 0.5, 300);
+    camera = new THREE.PerspectiveCamera(42, el.clientWidth / el.clientHeight, 0.8, 160);
     camera.position.set(14.5, 9.5, 17);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, logarithmicDepthBuffer: true });
@@ -561,10 +563,10 @@ const Lab = (function () {
     dir.shadow.camera.bottom = -8;
     dir.shadow.camera.near = 1;
     dir.shadow.camera.far = 50;
-    dir.shadow.bias = -0.0004;
-    dir.shadow.normalBias = 0.025;
+    dir.shadow.bias = -0.0006;
+    dir.shadow.normalBias = 0.06;
     scene.add(dir);
-    const fill = new THREE.DirectionalLight(0x6fb4ff, 0.3);
+    const fill = new THREE.DirectionalLight(0xa9c4dd, 0.3);
     fill.position.set(-10, 6, -12);
     scene.add(fill);
     lights = { hemi: hemi, dir: dir, fill: fill };
@@ -811,5 +813,7 @@ const Lab = (function () {
     setScene: setScene, info: screenInfo, pickAt: pickAt
   };
 })();
+
+
 
 
