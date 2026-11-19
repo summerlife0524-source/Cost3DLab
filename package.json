@@ -1,0 +1,44 @@
+{
+  "name": "cost3d-lab",
+  "productName": "造价3D学堂",
+  "version": "1.0.0",
+  "description": "一级造价工程师土建+安装 3D 互动学习工具",
+  "main": "main.js",
+  "author": "Doubao",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "32.2.7",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.doubao.cost3dlab",
+    "productName": "造价3D学堂",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "Cost3DLab-${version}.exe"
+    }
+  }
+}
