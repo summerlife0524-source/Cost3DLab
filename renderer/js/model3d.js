@@ -75,6 +75,7 @@ const Lab = (function () {
   function box(id, w, h, d, x, y, z, color, opts) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, opts));
     m.position.set(x, y, z);
+    if (opts && opts.noReceive) m.receiveShadow = false;
     return reg(m, id, opts && opts.part);
   }
 
@@ -112,26 +113,26 @@ const Lab = (function () {
 
     // 基础梁
     [-1.8, 1.8].forEach(function (z) {
-      box('beam', 5.2, 0.51, 0.25, 0, -0.05, z, C.concrete, { part: '基础梁' });
+      box('beam', 5.2, 0.51, 0.25, 0, -0.05, z, C.concrete, { part: '基础梁', noReceive: true });
     });
     [-2.8, 2.8].forEach(function (x) {
-      box('beam', 0.25, 0.51, 3.4, x, -0.05, 0, C.concrete, { part: '基础梁' });
+      box('beam', 0.25, 0.51, 3.4, x, -0.05, 0, C.concrete, { part: '基础梁', noReceive: true });
     });
 
     // ---------- 柱 ----------
     cols.forEach(function (c) {
       const cx = c[0] > 0 ? 2.78 : -2.78;
       const cz = c[1] > 0 ? 1.78 : -1.78;
-      box('column', 0.4, 6.91, 0.4, cx, 3.15, cz, C.concrete2, { part: '框架柱' });
+      box('column', 0.4, 6.91, 0.4, cx, 3.15, cz, C.concrete2, { part: '框架柱', noReceive: true });
       // 柱顶节点板（视觉装饰）
-      box('column', 0.5, 0.09, 0.5, cx, 6.585, cz, C.concrete, { part: '柱帽' });
+      box('column', 0.5, 0.09, 0.5, cx, 6.585, cz, C.concrete, { part: '柱帽', noReceive: true });
     });
 
     // ---------- 梁、板 ----------
     [3.36, 6.6].forEach(function (top, idx) {
       const yc = top - 0.25;
       [-1.8, 1.8].forEach(function (z) {
-        box('beam', 6.0, 0.51, 0.25, 0, yc, z, C.concrete, { part: idx ? '屋面梁' : '楼面梁' });
+        box('beam', 6.0, 0.51, 0.25, 0, yc, z, C.concrete, { part: idx ? '屋面梁' : '楼面梁', noReceive: true });
       });
       [-2.8, 2.8].forEach(function (x) {
         box('beam', 0.25, 0.51, 3.6, x, yc, 0, C.concrete, { part: idx ? '屋面梁' : '楼面梁' });
@@ -140,7 +141,7 @@ const Lab = (function () {
     });
 
     // ---------- 墙（可剖切） ----------
-    const wallOpt = { part: '外墙' };
+    const wallOpt = { part: '外墙', noReceive: true };
     // 一层：z=+2 前墙（留门洞 1.2m）
     box('wall', 4.2, 3.37, 0.2, -0.9, 1.68, 1.9, C.wall, wallOpt);
     box('wall', 0.6, 3.37, 0.2, 2.7, 1.68, 1.9, C.wall, wallOpt);
@@ -243,6 +244,29 @@ const Lab = (function () {
     root.userData.scaffold = sc;
     sc.visible = false;
 
+    // ---------- 回填方（基础坑内、房屋四周分层回填，示意半透明） ----------
+    const bfOpt = { rough: 1, part: '回填土' };
+    box('backfill', 1.0, 1.3, 6.2, -3.6, -0.35, 0, C.soil, bfOpt);
+    box('backfill', 1.0, 1.3, 6.2, 3.6, -0.35, 0, C.soil, bfOpt);
+    box('backfill', 6.2, 1.3, 1.2, 0, -0.35, 2.6, C.soil, bfOpt);
+    box('backfill', 6.2, 1.3, 1.2, 0, -0.35, -2.6, C.soil, bfOpt);
+
+    // ---------- 现浇混凝土钢筋（柱钢筋笼示意，立在基坑外侧空地） ----------
+    const rb = { metal: 0.55, rough: 0.5, part: '柱钢筋' };
+    [[-4.75, 2.25], [-4.25, 2.25], [-4.75, 2.75], [-4.25, 2.75]].forEach(function (p) {
+      cyl('reinforcement', 0.035, 2.8, p[0], 1.4, p[1], 0xb4553f, rb);
+    });
+    [0.25, 0.75, 1.25, 1.75, 2.25, 2.65].forEach(function (y) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.032, 8, 20), mat(0xb4553f, { metal: 0.55, rough: 0.5 }));
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(-4.5, y, 2.5);
+      ring.userData.compId = 'reinforcement';
+      ring.userData.part = '箍筋';
+      ring.castShadow = true;
+      (meshIndex['reinforcement'] = meshIndex['reinforcement'] || []).push(ring);
+      root.add(ring);
+    });
+
     // ---------- 标注锚点 ----------
     const A = [
       ['column', '2.8', '1.55', '1.8'],
@@ -250,6 +274,8 @@ const Lab = (function () {
       ['beam', '-2.8', '3.1', '0'],
       ['foundation', '-2.8', '-0.55', '1.8'],
       ['earthwork', '-3.9', '-0.9', '2.7'],
+      ['backfill', '-3.6', '-0.15', '1.2'],
+      ['reinforcement', '-4.5', '3.1', '2.5'],
       ['wall', '-2.95', '2.3', '0.5'],
       ['stair', '2.0', '1.7', '-1.15'],
       ['roof', '0', '7.3', '0'],
@@ -563,8 +589,8 @@ const Lab = (function () {
     dir.shadow.camera.bottom = -8;
     dir.shadow.camera.near = 1;
     dir.shadow.camera.far = 50;
-    dir.shadow.bias = -0.0006;
-    dir.shadow.normalBias = 0.06;
+    dir.shadow.bias = -0.0012;
+    dir.shadow.normalBias = 0.08;
     scene.add(dir);
     const fill = new THREE.DirectionalLight(0xa9c4dd, 0.3);
     fill.position.set(-10, 6, -12);
@@ -813,6 +839,9 @@ const Lab = (function () {
     setScene: setScene, info: screenInfo, pickAt: pickAt
   };
 })();
+
+
+
 
 
 
