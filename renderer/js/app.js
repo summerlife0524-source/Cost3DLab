@@ -146,6 +146,7 @@ function buildKnowledgeHTML(comp) {
     '<div class="kb-head ' + majorCls + '">' +
     '<div class="kb-tags"><span class="tag-major">' + comp.major + '</span>' +
     '<span class="tag-ch">' + (ch ? ch.title : '') + '</span>' +
+    '<span class="tag-std">' + (comp.major === '安装' ? 'GB/T 50856-2024' : 'GB/T 50854-2024') + '</span>' +
     (isMastered(comp.id) ? '<span class="tag-ok">已掌握</span>' : '<span class="tag-todo">待掌握</span>') +
     '</div>' +
     '<h2>' + comp.name + '</h2>' +
@@ -683,7 +684,7 @@ function initUI() {
     'door', 'earthwork', 'waterpipe', 'drainpipe', 'insulation', 'valve', 'hydrant', 'cabletray',
     'airduct', 'distribution', 'scaffold'];
   const shortName = {
-    foundation: '独立基础', cushion: '混凝土垫层', beam: '基础梁', column: '框架柱', slab: '有梁板',
+    foundation: '独立基础', cushion: '基础垫层', beam: '钢筋砼梁', column: '钢筋砼柱', slab: '实心楼板',
     wall: '砌块墙', stair: '楼梯', roof: '屋面防水', waterproof: '楼地面防水', door: '门窗',
     earthwork: '土方', waterpipe: '给水管道', drainpipe: '排水管道', insulation: '管道保温',
     valve: '阀门', hydrant: '消火栓', cabletray: '电缆桥架', airduct: '通风管道',

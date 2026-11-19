@@ -192,6 +192,7 @@ main {
 .kb-head:not(.mep) .tag-major { color: var(--civ); border-color: rgba(240, 178, 94, 0.45); background: rgba(240, 178, 94, 0.08); }
 .kb-head.mep .tag-major { color: var(--mep); border-color: rgba(79, 210, 230, 0.45); background: rgba(79, 210, 230, 0.08); }
 .tag-ch { font-size: 10.5px; padding: 2px 7px; border-radius: 3px; color: var(--txt3); border: 1px solid var(--line2); }
+.tag-std { font-size: 10.5px; padding: 2px 7px; border-radius: 3px; color: #f0b25e; border: 1px dashed rgba(240, 178, 94, 0.5); letter-spacing: 0.3px; }
 .tag-ok { font-size: 10.5px; padding: 2px 7px; border-radius: 3px; color: var(--ok); border: 1px solid rgba(88, 206, 141, 0.4); background: rgba(88, 206, 141, 0.08); }
 .tag-todo { font-size: 10.5px; padding: 2px 7px; border-radius: 3px; color: var(--txt3); border: 1px solid var(--line2); }
 .kb-head h2 { margin: 0 0 8px; font-size: 20px; letter-spacing: 1px; font-weight: 600; }
