@@ -55,7 +55,7 @@
 需要 Node.js 18+：
 
 ```bash
-git clone https://github.com/<your-name>/Cost3DLab.git
+git clone https://github.com/summerlife0524-source/Cost3DLab.git
 cd Cost3DLab
 npm install
 npm start          # 开发模式运行
