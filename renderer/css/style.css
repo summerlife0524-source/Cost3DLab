@@ -442,6 +442,28 @@ main {
 .ch-note { font-size: 10.5px; color: var(--txt3); }
 
 /* ---------------- 案例 ---------------- */
+.case-lib { margin-bottom: 18px; }
+.case-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.case-filter { border: 1px solid var(--line); background: transparent; color: var(--txt3); border-radius: 16px; padding: 5px 14px; font-size: 11.5px; cursor: pointer; font-family: var(--sans); }
+.case-filter:hover { color: var(--txt2); border-color: var(--line2); }
+.case-filter.on { color: var(--civ); border-color: rgba(240, 178, 94, 0.45); background: rgba(240, 178, 94, 0.08); }
+.case-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 10px; }
+.case-card { border: 1px solid var(--line); border-radius: 9px; background: var(--panel); padding: 12px 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+.case-card:hover { border-color: var(--line2); }
+.case-card.active { border-color: rgba(240, 178, 94, 0.5); background: rgba(240, 178, 94, 0.06); }
+.case-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.case-card-top h4 { margin: 0; font-size: 13px; font-weight: 500; }
+.case-lv { font-size: 10px; color: var(--txt3); border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; white-space: nowrap; }
+.case-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 6px; }
+.cm-tag { font-style: normal; font-size: 10px; border-radius: 3px; padding: 1px 6px; border: 1px solid; }
+.cm-tag.civil { color: var(--civ); border-color: rgba(240, 178, 94, 0.35); }
+.cm-tag.mep { color: var(--mep); border-color: rgba(79, 210, 230, 0.35); }
+.cm-tag.trans { color: var(--trans); border-color: rgba(127, 179, 255, 0.35); }
+.cm-tag.hydro { color: var(--hydro); border-color: rgba(63, 214, 168, 0.35); }
+.case-card > p { margin: 0; font-size: 11px; color: var(--txt3); line-height: 1.6; min-height: 34px; }
+.case-card-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px; color: var(--txt3); font-family: var(--mono); }
+.case-banner-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.case-banner-major { font-size: 10.5px; color: var(--civ); border: 1px solid rgba(240, 178, 94, 0.35); border-radius: 3px; padding: 2px 8px; letter-spacing: 1px; }
 .case-banner { border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(150deg, rgba(240, 178, 94, 0.07), rgba(79, 210, 230, 0.04)); padding: 20px 22px; margin-bottom: 16px; }
 .case-banner h2 { margin: 0 0 6px; font-size: 19px; letter-spacing: 1px; }
 .case-banner > p { margin: 0 0 16px; font-size: 12px; color: var(--txt2); }

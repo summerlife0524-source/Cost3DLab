@@ -48,6 +48,8 @@ const DEFAULT_STATE = {
   read: {},
   chapterDone: {},
   caseDone: {},
+  caseId: '',
+  caseFilter: 'all',
   calcCount: 0
 };
 let state = loadState();
@@ -624,8 +626,41 @@ function openChapterTest(chId) {
 }
 
 /* ---------- 案例 ---------- */
+function caseTotal(cs) {
+  let t = 0;
+  cs.steps.forEach(function (s) { s.rows.forEach(function (r) { t += r.qty * r.price; }); });
+  return t;
+}
+function caseIsMix(cs) { return cs.majors.length > 1; }
+
 function renderCase() {
-  const cs = CASE_STUDY;
+  if (!state.caseFilter) state.caseFilter = 'all';
+  let lib = CASE_LIBRARY;
+  if (state.caseFilter === 'mix') lib = CASE_LIBRARY.filter(caseIsMix);
+  else if (state.caseFilter !== 'all') lib = CASE_LIBRARY.filter(function (c) {
+    return c.majors.length === 1 && c.majors[0] === state.caseFilter;
+  });
+  if (!lib.length) lib = CASE_LIBRARY;
+  let cs = CASE_LIBRARY.filter(function (c) { return c.id === state.caseId; })[0];
+  if (!cs || lib.indexOf(cs) < 0) cs = lib[0];
+  state.caseId = cs.id;
+
+  const filterHTML = CASE_FILTERS.map(function (f) {
+    return '<button class="case-filter' + (state.caseFilter === f[0] ? ' on' : '') + '" data-filter="' + f[0] + '">' + f[1] + '</button>';
+  }).join('');
+
+  const cardHTML = lib.map(function (c) {
+    const tags = c.majors.map(function (m) {
+      return '<i class="cm-tag ' + m + '">' + CASE_MAJOR_LABEL[m] + '</i>';
+    }).join('');
+    return '<div class="case-card' + (c.id === cs.id ? ' active' : '') + '" data-case="' + c.id + '">' +
+      '<div class="case-card-top"><h4>' + c.short + '</h4><span class="case-lv">' + c.level + '</span></div>' +
+      '<div class="case-card-tags">' + tags + '</div>' +
+      '<p>' + (c.plan || c.subtitle) + '</p>' +
+      '<div class="case-card-meta"><span>' + c.steps.length + ' 步</span><span>约 ' + (caseTotal(c) / 10000).toFixed(1) + ' 万元</span></div>' +
+      '</div>';
+  }).join('');
+
   let total = 0;
   const stepHTML = cs.steps.map(function (s, si) {
     let sub = 0;
@@ -636,8 +671,9 @@ function renderCase() {
         '<td class="mono">' + fmt(r.qty, 3) + '</td><td class="mono">' + fmt(r.price) + '</td><td class="mono">' + fmt(amt) + '</td></tr>';
     }).join('');
     total += sub;
-    const opened = state.caseDone[s.id];
-    return '<div class="case-step" data-step="' + s.id + '">' +
+    const key = cs.id + ':' + s.id;
+    const opened = state.caseDone[key];
+    return '<div class="case-step" data-step="' + key + '">' +
       '<div class="case-head"><div class="case-no">' + (si + 1) + '</div>' +
       '<div class="case-t"><h3>' + s.title + '</h3><p>' + s.teach + '</p></div>' +
       '<div class="case-sum"><b>' + fmt(sub) + '</b><em>元</em></div>' +
@@ -657,9 +693,15 @@ function renderCase() {
       '<p class="case-q-q">' + q.q + '</p><p class="case-q-a" hidden>' + q.a + '</p></div>';
   }).join('');
 
+  const majors = cs.majors.map(function (m) { return CASE_MAJOR_LABEL[m]; }).join('＋');
+
   document.getElementById('case-root').innerHTML =
-    '<div class="case-banner"><h2>' + cs.title + '</h2><p>' + cs.subtitle + '</p>' +
-    '<div class="case-params">' + cs.params.map(function (p) {
+    '<div class="case-lib"><div class="case-filters">' + filterHTML + '</div><div class="case-cards">' + cardHTML + '</div></div>' +
+    '<div class="case-banner"><div class="case-banner-top"><h2>' + cs.title + '</h2>' +
+    '<span class="case-banner-major">' + majors + '</span></div><p>' + cs.subtitle + '</p>' +
+    '<div class="case-params">' +
+    (cs.plan ? '<div><span>方案概况</span><b>' + cs.plan + '</b></div>' : '') +
+    cs.params.map(function (p) {
       return '<div><span>' + p[0] + '</span><b>' + p[1] + '</b></div>';
     }).join('') + '</div></div>' +
     stepHTML +
@@ -670,8 +712,26 @@ function renderCase() {
     '<div><span>规费（' + (cs.summary.feeRate * 100) + '%）</span><b>' + fmt(fee) + ' 元</b></div>' +
     '<div><span>税金（' + (cs.summary.taxRate * 100) + '%）</span><b>' + fmt(tax) + ' 元</b></div>' +
     '<div class="total-final"><span>工程造价</span><b>' + fmt(final) + ' 元</b></div></div>' +
-    '<p class="note">' + cs.priceNote + '</p></div>' +
+    '<p class="note">' + (cs.priceNote || '表中综合单价为教学示例值，实际需按当地定额与信息价组价。') + '</p></div>' +
     '<div class="case-qs">' + qs + '</div>';
+
+  document.querySelectorAll('.case-filter').forEach(function (btn) {
+    btn.onclick = function () {
+      state.caseFilter = btn.dataset.filter;
+      state.caseId = '';
+      saveState();
+      renderCase();
+    };
+  });
+  document.querySelectorAll('.case-card').forEach(function (card) {
+    card.onclick = function () {
+      state.caseId = card.dataset.case;
+      saveState();
+      renderCase();
+      const pg = document.querySelector('#view-case .page');
+      if (pg) pg.scrollTop = 0;
+    };
+  });
 
   document.querySelectorAll('.case-toggle').forEach(function (btn) {
     btn.onclick = function () {
