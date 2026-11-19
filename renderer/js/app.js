@@ -406,8 +406,28 @@ function chapterProgress(ch) {
   return { done: done, total: total, pct: total ? Math.round(done / total * 100) : 0 };
 }
 
+let chFilter = 'all';
+const CH_BOOK = { civil: '土建计量', mep: '安装计量', cost: '计价/案例' };
+
 function renderChapters() {
-  const html = CHAPTERS.map(function (ch) {
+  const groups = [
+    { k: 'all', label: '全部' },
+    { k: 'civil', label: '土建计量' },
+    { k: 'mep', label: '安装计量' },
+    { k: 'cost', label: '计价 / 案例' }
+  ];
+  const tabs = groups.map(function (g) {
+    const n = g.k === 'all' ? CHAPTERS.length : CHAPTERS.filter(function (c) { return c.book === CH_BOOK[g.k]; }).length;
+    return '<button class="ch-tab' + (chFilter === g.k ? ' on' : '') + '" data-chfilter="' + g.k + '">' +
+      g.label + '<em>' + n + '</em></button>';
+  }).join('');
+  const box = document.getElementById('ch-filter');
+  if (box) box.innerHTML = tabs;
+
+  const list = CHAPTERS.filter(function (ch) {
+    return chFilter === 'all' || ch.book === CH_BOOK[chFilter];
+  });
+  const html = list.map(function (ch) {
     const pr = chapterProgress(ch);
     const done = state.chapterDone[ch.id];
     return '<div class="ch-card" data-ch="' + ch.id + '">' +
@@ -433,24 +453,49 @@ function chapterBody(ch) {
   const comps = (ch.comps || []).map(function (cid) {
     return '<button class="chip" data-goto="' + cid + '">' + COMP_MAP[cid].name + '</button>';
   }).join('');
-  return '<div class="kp-list">' + items + '</div>' +
+  const qn = chapterQuestions(ch).length;
+  const needN = Math.max(1, Math.ceil(qn * 0.8));
+  return chapterFigure(ch) +
+    '<div class="kp-list">' + items + '</div>' +
     (comps ? '<div class="ch-links"><span>本章构件：</span><div class="chips">' + comps + '</div></div>' : '') +
-    '<div class="ch-actions"><button class="btn-primary" data-test="' + ch.id + '">开始章节小测（5 题）</button>' +
-    '<span class="ch-note">答对 4 题及以上即通关，+10 XP</span></div>';
+    '<div class="ch-actions"><button class="btn-primary" data-test="' + ch.id + '">开始章节小测（' + qn + ' 题）</button>' +
+    '<span class="ch-note">答对 ' + needN + ' 题及以上即通关，+10 XP</span></div>';
+}
+
+function chapterFigure(ch) {
+  const fig = (typeof CH_FIGURES !== 'undefined') ? CH_FIGURES[ch.id] : null;
+  if (!fig) return '';
+  return '<div class="ch-figure">' +
+    '<div class="fig-main"><div class="fig-name">' + fig.title + '</div>' + fig.svg + '</div>' +
+    '<div class="fig-side"><div class="fig-cap">图例</div>' +
+    '<div class="fig-items">' + fig.legend.map(function (l) {
+      return '<div class="fig-item"><i style="background:' + l.c + '"></i><span>' + l.t + '</span></div>';
+    }).join('') + '</div>' +
+    (fig.note ? '<p class="fig-note">' + fig.note + '</p>' : '') +
+    '</div></div>';
 }
 
 function openChapterTest(chId) {
   const ch = CH_MAP[chId];
-  const qs = chapterQuestions(ch);
+  const qs = chapterQuestions(ch).slice();
+  // 每次开考都清空本章题目的作答记录，否则重考会停留在上一次的选项状态、无法再选
+  qs.forEach(function (q) { delete state.quiz[q.id]; });
+  saveState();
+  // 重考时打乱出题顺序，避免形成“记住第几题选 C”的假记忆
+  for (let i = qs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = qs[i]; qs[i] = qs[j]; qs[j] = tmp;
+  }
+  const need = Math.max(1, Math.ceil(qs.length * 0.8));
   const body = qs.map(function (q, i) { return renderQuiz(q, true, i + 1); }).join('') +
     '<div class="test-foot"><button class="btn-primary" id="test-submit">提交小测</button>' +
-    '<p class="test-hint">共 ' + qs.length + ' 题，答对 4 题通关</p></div>';
+    '<p class="test-hint">共 ' + qs.length + ' 题，答对 ' + need + ' 题通关</p></div>';
   openModal(ch.title + ' · 章节小测', body);
   document.getElementById('test-submit').onclick = function () {
     let right = 0;
     qs.forEach(function (q) { if (state.quiz[q.id] && state.quiz[q.id].ok) right++; });
     let unanswered = qs.filter(function (q) { return !state.quiz[q.id]; }).length;
-    const pass = right >= 4;
+    const pass = right >= need;
     if (pass && !state.chapterDone[chId]) {
       state.chapterDone[chId] = 1;
       saveState();
@@ -599,6 +644,13 @@ function closeModal() {
 document.addEventListener('click', function (e) {
   const opt = e.target.closest('.opt');
   if (opt) { handleOpt(opt); return; }
+
+  const chTab = e.target.closest('[data-chfilter]');
+  if (chTab) {
+    chFilter = chTab.dataset.chfilter;
+    renderChapters();
+    return;
+  }
 
   const nav = e.target.closest('.nav-item');
   if (nav) { setView(nav.dataset.view); return; }

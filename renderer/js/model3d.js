@@ -42,12 +42,14 @@ const Lab = (function () {
 
   function mat(color, opts) {
     opts = opts || {};
+    const alpha = opts.opacity === undefined ? 1 : opts.opacity;
     return new THREE.MeshStandardMaterial({
       color: color,
       roughness: opts.rough === undefined ? 0.78 : opts.rough,
       metalness: opts.metal === undefined ? 0.06 : opts.metal,
-      transparent: opts.opacity !== undefined && opts.opacity < 1,
-      opacity: opts.opacity === undefined ? 1 : opts.opacity,
+      transparent: alpha < 1,
+      opacity: alpha,
+      depthWrite: alpha >= 1 ? true : (opts.depthWrite === undefined ? false : opts.depthWrite),
       emissive: 0x000000,
       flatShading: false
     });
@@ -78,15 +80,15 @@ const Lab = (function () {
   function build() {
     // ---------- 场地与土体 ----------
     const grid = new THREE.GridHelper(30, 30, 0x21405c, 0x152c40);
-    grid.position.y = 0.001;
+    grid.position.y = 0.006;
     root.add(grid);
 
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(34, 34),
-      new THREE.MeshStandardMaterial({ color: 0x08131f, roughness: 1, transparent: true, opacity: 0.95 })
+      new THREE.MeshStandardMaterial({ color: 0x08131f, roughness: 1, transparent: true, opacity: 0.95, depthWrite: false })
     );
     plane.rotation.x = -Math.PI / 2;
-    plane.position.y = -0.002;
+    plane.position.y = -0.02;
     plane.receiveShadow = true;
     root.add(plane);
 
@@ -98,32 +100,32 @@ const Lab = (function () {
     const cols = [[-2.8, -1.8], [2.8, -1.8], [-2.8, 1.8], [2.8, 1.8]];
     cols.forEach(function (c) {
       box('cushion', 1.0, 0.15, 1.0, c[0], -0.875, c[1], C.cushion, { rough: 0.95, part: '垫层' });
-      box('foundation', 0.8, 0.5, 0.8, c[0], -0.55, c[1], C.foundation, { part: '独立基础' });
+      box('foundation', 0.8, 0.51, 0.8, c[0], -0.55, c[1], C.foundation, { part: '独立基础' });
     });
 
     // 基础梁
     [-1.8, 1.8].forEach(function (z) {
-      box('beam', 5.2, 0.5, 0.25, 0, -0.05, z, C.concrete, { part: '基础梁' });
+      box('beam', 5.2, 0.51, 0.25, 0, -0.05, z, C.concrete, { part: '基础梁' });
     });
     [-2.8, 2.8].forEach(function (x) {
-      box('beam', 0.25, 0.5, 3.4, x, -0.05, 0, C.concrete, { part: '基础梁' });
+      box('beam', 0.25, 0.51, 3.4, x, -0.05, 0, C.concrete, { part: '基础梁' });
     });
 
     // ---------- 柱 ----------
     cols.forEach(function (c) {
-      box('column', 0.4, 6.9, 0.4, c[0], 3.15, c[1], C.concrete2, { part: '框架柱' });
+      box('column', 0.4, 6.91, 0.4, c[0], 3.15, c[1], C.concrete2, { part: '框架柱' });
       // 柱顶节点板（视觉装饰）
-      box('column', 0.5, 0.08, 0.5, c[0], 6.58, c[1], C.concrete, { part: '柱帽' });
+      box('column', 0.5, 0.09, 0.5, c[0], 6.585, c[1], C.concrete, { part: '柱帽' });
     });
 
     // ---------- 梁、板 ----------
     [3.36, 6.6].forEach(function (top, idx) {
       const yc = top - 0.25;
       [-1.8, 1.8].forEach(function (z) {
-        box('beam', 6.0, 0.5, 0.25, 0, yc, z, C.concrete, { part: idx ? '屋面梁' : '楼面梁' });
+        box('beam', 6.0, 0.51, 0.25, 0, yc, z, C.concrete, { part: idx ? '屋面梁' : '楼面梁' });
       });
       [-2.8, 2.8].forEach(function (x) {
-        box('beam', 0.25, 0.5, 3.6, x, yc, 0, C.concrete, { part: idx ? '屋面梁' : '楼面梁' });
+        box('beam', 0.25, 0.51, 3.6, x, yc, 0, C.concrete, { part: idx ? '屋面梁' : '楼面梁' });
       });
       box('slab', 6.0, 0.12, 4.0, 0, top - 0.06, 0, C.concrete2, { part: idx ? '屋面板' : '楼板' });
     });
@@ -131,31 +133,31 @@ const Lab = (function () {
     // ---------- 墙（可剖切） ----------
     const wallOpt = { part: '外墙' };
     // 一层：z=+2 前墙（留门洞 1.2m）
-    box('wall', 4.2, 3.36, 0.2, -0.9, 1.68, 1.9, C.wall, wallOpt);
-    box('wall', 0.6, 3.36, 0.2, 2.7, 1.68, 1.9, C.wall, wallOpt);
+    box('wall', 4.2, 3.37, 0.2, -0.9, 1.68, 1.9, C.wall, wallOpt);
+    box('wall', 0.6, 3.37, 0.2, 2.7, 1.68, 1.9, C.wall, wallOpt);
     // 一层：z=-2 后墙
-    box('wall', 6.0, 3.36, 0.2, 0, 1.68, -1.9, C.wall, wallOpt);
+    box('wall', 6.0, 3.37, 0.2, 0, 1.68, -1.9, C.wall, wallOpt);
     // 一层：x=±3 侧墙
-    box('wall', 0.2, 3.36, 3.6, -2.9, 1.68, 0, C.wall, wallOpt);
-    box('wall', 0.2, 3.36, 3.6, 2.9, 1.68, 0, C.wall, wallOpt);
+    box('wall', 0.2, 3.37, 3.6, -2.9, 1.68, 0, C.wall, wallOpt);
+    box('wall', 0.2, 3.37, 3.6, 2.9, 1.68, 0, C.wall, wallOpt);
     // 二层
-    box('wall', 6.0, 3.24, 0.2, 0, 4.98, 1.9, C.wall2, wallOpt);
-    box('wall', 6.0, 3.24, 0.2, 0, 4.98, -1.9, C.wall2, wallOpt);
-    box('wall', 0.2, 3.24, 3.6, -2.9, 4.98, 0, C.wall2, wallOpt);
-    box('wall', 0.2, 3.24, 3.6, 2.9, 4.98, 0, C.wall2, wallOpt);
+    box('wall', 6.0, 3.25, 0.2, 0, 4.98, 1.9, C.wall2, wallOpt);
+    box('wall', 6.0, 3.25, 0.2, 0, 4.98, -1.9, C.wall2, wallOpt);
+    box('wall', 0.2, 3.25, 3.6, -2.9, 4.98, 0, C.wall2, wallOpt);
+    box('wall', 0.2, 3.25, 3.6, 2.9, 4.98, 0, C.wall2, wallOpt);
 
     // ---------- 门窗 ----------
     box('door', 1.2, 2.1, 0.06, 1.8, 1.05, 1.9, C.doorWood, { part: '门' });
     const winOpt = { opacity: 0.62, rough: 0.35, metal: 0.08, part: '窗' };
-    box('door', 1.5, 1.5, 0.05, -1.6, 1.7, -2.02, C.glass, winOpt);
-    box('door', 1.5, 1.5, 0.05, 1.6, 1.7, -2.02, C.glass, winOpt);
-    box('door', 1.5, 1.5, 0.05, -1.6, 4.9, -2.02, C.glass, winOpt);
-    box('door', 1.5, 1.5, 0.05, 1.6, 4.9, -2.02, C.glass, winOpt);
-    box('door', 0.06, 1.5, 1.5, 3.02, 4.9, 0, C.glass, winOpt);
+    box('door', 1.5, 1.5, 0.05, -1.6, 1.7, -2.04, C.glass, winOpt);
+    box('door', 1.5, 1.5, 0.05, 1.6, 1.7, -2.04, C.glass, winOpt);
+    box('door', 1.5, 1.5, 0.05, -1.6, 4.9, -2.04, C.glass, winOpt);
+    box('door', 1.5, 1.5, 0.05, 1.6, 4.9, -2.04, C.glass, winOpt);
+    box('door', 0.06, 1.5, 1.5, 3.04, 4.9, 0, C.glass, winOpt);
     // 正立面窗（朝向镜头）
-    box('door', 1.3, 1.4, 0.05, -1.7, 1.75, 2.02, C.glass, winOpt);
-    box('door', 1.3, 1.4, 0.05, -1.7, 4.9, 2.02, C.glass, winOpt);
-    box('door', 1.3, 1.4, 0.05, 0.3, 4.9, 2.02, C.glass, winOpt);
+    box('door', 1.3, 1.4, 0.05, -1.7, 1.75, 2.04, C.glass, winOpt);
+    box('door', 1.3, 1.4, 0.05, -1.7, 4.9, 2.04, C.glass, winOpt);
+    box('door', 1.3, 1.4, 0.05, 0.3, 4.9, 2.04, C.glass, winOpt);
 
     // ---------- 楼梯（直形楼梯，20 级，坡度约 32°） ----------
     const stRise = 0.165, stTread = 0.26, stW = 1.0, stX0 = -2.5, stZ = -1.15;
@@ -265,10 +267,10 @@ const Lab = (function () {
     scene.background = new THREE.Color(0x0a1420);
     scene.fog = new THREE.Fog(0x0a1420, 30, 60);
 
-    camera = new THREE.PerspectiveCamera(42, el.clientWidth / el.clientHeight, 0.4, 200);
+    camera = new THREE.PerspectiveCamera(42, el.clientWidth / el.clientHeight, 0.5, 300);
     camera.position.set(14.5, 9.5, 17);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, logarithmicDepthBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(el.clientWidth, el.clientHeight);
     renderer.shadowMap.enabled = true;
@@ -298,7 +300,8 @@ const Lab = (function () {
     dir.shadow.camera.bottom = -8;
     dir.shadow.camera.near = 1;
     dir.shadow.camera.far = 50;
-    dir.shadow.bias = -0.0008;
+    dir.shadow.bias = -0.0004;
+    dir.shadow.normalBias = 0.025;
     scene.add(dir);
     const fill = new THREE.DirectionalLight(0x6fb4ff, 0.35);
     fill.position.set(-10, 6, -12);

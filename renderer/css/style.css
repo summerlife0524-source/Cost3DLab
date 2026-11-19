@@ -502,3 +502,41 @@ main {
 .test-result p { font-size: 12.5px; color: var(--txt2); margin: 0 0 8px; }
 .test-result p b { font-family: var(--mono); color: var(--civ); font-size: 16px; }
 .test-result .note { margin-bottom: 16px; }
+
+/* ---------- 章节图解 ---------- */
+.ch-figure {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(208px, 1fr);
+  gap: 12px 20px;
+  margin: 12px 0 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(158deg, rgba(79, 210, 230, 0.05), rgba(255, 255, 255, 0.012));
+}
+.fig-name { font-family: var(--mono); font-size: 10.5px; letter-spacing: 1.2px; color: var(--txt3); margin-bottom: 4px; }
+.fig-main svg { width: 100%; height: auto; display: block; max-height: 300px; }
+.fig-side { border-left: 1px dashed rgba(255, 255, 255, 0.09); padding-left: 16px; }
+.fig-cap { font-size: 10.5px; letter-spacing: 3px; color: var(--civ); margin-bottom: 9px; }
+.fig-items { display: flex; flex-direction: column; gap: 7px; }
+.fig-item { display: flex; gap: 8px; align-items: flex-start; font-size: 11.5px; line-height: 1.55; color: var(--txt2); }
+.fig-item i { width: 10px; height: 10px; flex: none; border-radius: 2px; margin-top: 3px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15); }
+.fig-note { margin: 11px 0 0; padding-top: 9px; border-top: 1px dashed rgba(255, 255, 255, 0.09); font-size: 11px; line-height: 1.72; color: var(--txt3); }
+@media (max-width: 1100px) {
+  .ch-figure { grid-template-columns: 1fr; }
+  .fig-side { border-left: 0; padding-left: 0; border-top: 1px dashed rgba(255, 255, 255, 0.09); padding-top: 10px; }
+}
+
+/* ---------- 章节分类筛选 ---------- */
+.ch-filter { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+.ch-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 13px; border-radius: 6px;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02);
+  color: var(--txt2); font-size: 12px; letter-spacing: 1px; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.ch-tab em { font-style: normal; font-family: var(--mono); font-size: 10px; color: var(--txt3); }
+.ch-tab:hover { border-color: var(--line2); color: var(--txt); }
+.ch-tab.on { color: var(--civ); border-color: rgba(240, 178, 94, 0.45); background: rgba(240, 178, 94, 0.09); }
+.ch-tab.on em { color: var(--civ); }
