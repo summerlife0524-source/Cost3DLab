@@ -17,6 +17,11 @@ COMPONENTS.forEach(function (c) {
 CHAPTERS.forEach(function (ch) {
   (ch.quizExtra || []).forEach(function (q) { Q_INDEX[q.id] = Object.assign({}, q, { chapterId: ch.id }); });
 });
+if (typeof QUIZ_BANKS !== 'undefined') {
+  Object.keys(QUIZ_BANKS).forEach(function (chId) {
+    QUIZ_BANKS[chId].forEach(function (q) { Q_INDEX[q.id] = Object.assign({}, q, { chapterId: chId }); });
+  });
+}
 
 /* ---------- 状态 ---------- */
 const STORE_KEY = 'cost3d_state_v2';
@@ -384,18 +389,39 @@ function renderCalcHistory() {
 }
 
 /* ---------- 章节 ---------- */
+const TEST_SIZE = 5;   // 每场小测抽题数
+
+/* 本章可用于出题的全部题目：构件知识卡题 + 扩充题库 + 章节附加题，按题干去重 */
+function chapterPool(ch) {
+  let qs = [];
+  (ch.comps || []).forEach(function (cid) {
+    const c = COMP_MAP[cid];
+    if (c) qs = qs.concat(c.quiz || []);
+  });
+  if (typeof QUIZ_BANKS !== 'undefined' && QUIZ_BANKS[ch.id]) qs = qs.concat(QUIZ_BANKS[ch.id]);
+  qs = qs.concat(ch.quizExtra || []);
+  const seen = {};
+  const out = [];
+  qs.forEach(function (q) {
+    const k = String(q.q || '').replace(/[（）()\s　、，。？?]/g, '');
+    if (!seen[k]) { seen[k] = 1; out.push(q); }
+  });
+  return out;
+}
+
+function shuffleArr(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+
+/* 每场小测都从题库里重新随机抽题，所以第二次、第三次打开的题不一样 */
 function chapterQuestions(ch) {
-    let qs = [];
-    (ch.comps || []).forEach(function (cid) {
-      const c = COMP_MAP[cid];
-      if (c) qs = qs.concat(c.quiz);
-    });
-    qs = qs.concat(ch.quizExtra || []);
-    const picked = [];
-    for (let i = 0; i < qs.length && picked.length < 5; i += Math.max(1, Math.floor(qs.length / 5))) {
-      picked.push(qs[i]);
-    }
-    return picked.slice(0, 5);
+  const pool = chapterPool(ch);
+  const picked = shuffleArr(pool.slice()).slice(0, Math.min(TEST_SIZE, pool.length));
+  return picked;
 }
 
 function chapterProgress(ch) {
@@ -454,13 +480,14 @@ function chapterBody(ch) {
   const comps = (ch.comps || []).map(function (cid) {
     return '<button class="chip" data-goto="' + cid + '">' + COMP_MAP[cid].name + '</button>';
   }).join('');
-  const qn = chapterQuestions(ch).length;
+  const bankN = chapterPool(ch).length;
+  const qn = Math.min(TEST_SIZE, bankN);
   const needN = Math.max(1, Math.ceil(qn * 0.8));
   return chapterFigure(ch) +
     '<div class="kp-list">' + items + '</div>' +
     (comps ? '<div class="ch-links"><span>本章构件：</span><div class="chips">' + comps + '</div></div>' : '') +
-    '<div class="ch-actions"><button class="btn-primary" data-test="' + ch.id + '">开始章节小测（' + qn + ' 题）</button>' +
-    '<span class="ch-note">答对 ' + needN + ' 题及以上即通关，+10 XP</span></div>';
+    '<div class="ch-actions"><button class="btn-primary" data-test="' + ch.id + '">开始章节小测（随机 ' + qn + ' 题）</button>' +
+    '<span class="ch-note">题库共 ' + bankN + ' 题 · 每次随机抽 ' + qn + ' 题 · 答对 ' + needN + ' 题通关，+10 XP</span></div>';
 }
 
 function chapterFigure(ch) {
@@ -483,15 +510,16 @@ function openChapterTest(chId) {
   qs.forEach(function (q) { delete state.quiz[q.id]; });
   saveState();
   // 重考时打乱出题顺序，避免形成“记住第几题选 C”的假记忆
-  for (let i = qs.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const tmp = qs[i]; qs[i] = qs[j]; qs[j] = tmp;
-  }
+  shuffleArr(qs);
   const need = Math.max(1, Math.ceil(qs.length * 0.8));
   const body = qs.map(function (q, i) { return renderQuiz(q, true, i + 1); }).join('') +
     '<div class="test-foot"><button class="btn-primary" id="test-submit">提交小测</button>' +
+    '<button class="btn-line" id="test-refresh">换一批题</button>' +
     '<p class="test-hint">共 ' + qs.length + ' 题，答对 ' + need + ' 题通关</p></div>';
   openModal(ch.title + ' · 章节小测', body);
+  document.getElementById('test-refresh').onclick = function () {
+    openChapterTest(chId);
+  };
   document.getElementById('test-submit').onclick = function () {
     let right = 0;
     qs.forEach(function (q) { if (state.quiz[q.id] && state.quiz[q.id].ok) right++; });
