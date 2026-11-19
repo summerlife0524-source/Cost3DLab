@@ -482,6 +482,17 @@ main {
 .case-toggle { border: 1px solid var(--line2); background: transparent; color: var(--txt2); border-radius: 5px; padding: 7px 12px; font-size: 11.5px; cursor: pointer; font-family: var(--sans); white-space: nowrap; }
 .case-toggle:hover { border-color: var(--civ); color: var(--civ); }
 .case-body { border-top: 1px solid var(--line); padding: 12px 15px 14px; }
+.case-work { margin-top: 14px; border: 1px solid rgba(240, 192, 96, 0.28); background: rgba(240, 192, 96, 0.06); border-radius: 8px; padding: 12px 14px 10px; }
+.case-work-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.case-work-h span { font-size: 12px; font-weight: 700; color: #f0c060; letter-spacing: 1px; }
+.case-work-h em { font-style: normal; font-size: 10.5px; color: var(--txt3); }
+.case-work ul { margin: 0; padding: 0; list-style: none; }
+.case-work li { font-size: 11.5px; line-height: 1.9; color: var(--txt2); padding: 2px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.05); }
+.case-work li:last-child { border-bottom: 0; }
+.case-work-tip { margin: 7px 0 0; font-size: 10.5px; color: var(--txt3); line-height: 1.6; }
+.case-guide { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 14px; border: 1px dashed var(--line); border-radius: 8px; }
+.case-guide b { font-size: 11.5px; color: #f0c060; }
+.case-guide span { font-size: 11px; color: var(--txt3); }
 .case-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
 .case-table tfoot td { border-top: 1px solid var(--line); color: var(--txt2); font-size: 11.5px; }
 .case-table tfoot td:first-child { text-align: right; color: var(--txt3); }

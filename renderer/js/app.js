@@ -672,7 +672,11 @@ function renderCase() {
     }).join('');
     total += sub;
     const key = cs.id + ':' + s.id;
-    const opened = state.caseDone[key];
+    const opened = state.caseDone[key] || si === 0;
+    const work = (typeof CASE_WORK !== 'undefined' && CASE_WORK[key]) ? CASE_WORK[key] : null;
+    const workHTML = work ? '<div class="case-work"><div class="case-work-h"><span>手算过程</span><em>每一个数字怎么来的，照着抄一遍</em></div>' +
+      '<ul>' + work.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>' +
+      '<p class="case-work-tip">没列到的项目，是按图纸尺寸／数量直接汇总的（清单规则已写在上面那段话里）。</p></div>' : '';
     return '<div class="case-step" data-step="' + key + '">' +
       '<div class="case-head"><div class="case-no">' + (si + 1) + '</div>' +
       '<div class="case-t"><h3>' + s.title + '</h3><p>' + s.teach + '</p></div>' +
@@ -680,7 +684,7 @@ function renderCase() {
       '<button class="case-toggle">' + (opened ? '收起' : '展开计算') + '</button></div>' +
       '<div class="case-body" ' + (opened ? '' : 'hidden') + '>' +
       '<table class="case-table"><thead><tr><th>清单项目</th><th>项目编码</th><th>单位</th><th>工程量</th><th>综合单价</th><th>合价(元)</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody><tfoot><tr><td colspan="5">小计</td><td class="mono">' + fmt(sub) + '</td></tr></tfoot></table></div></div>';
+      '<tbody>' + rows + '</tbody><tfoot><tr><td colspan="5">小计</td><td class="mono">' + fmt(sub) + '</td></tr></tfoot></table>' + workHTML + '</div></div>';
   }).join('');
 
   const other = total * cs.summary.otherRate;
@@ -704,6 +708,10 @@ function renderCase() {
     cs.params.map(function (p) {
       return '<div><span>' + p[0] + '</span><b>' + p[1] + '</b></div>';
     }).join('') + '</div></div>' +
+    '<div class="case-guide"><b>零基础怎么看这套案例</b>' +
+    '<span>① 点开某一步 → 先读「手算过程」，把每个数字自己算一遍</span>' +
+    '<span>② 再回头看清单表格：项目、编码、单位、工程量怎么对应</span>' +
+    '<span>③ 最后做下面的思考题，答不上来就回到这一步重看</span></div>' +
     stepHTML +
     '<div class="case-total-card"><h3>造价汇总（示例口径）</h3>' +
     '<div class="total-rows">' +
