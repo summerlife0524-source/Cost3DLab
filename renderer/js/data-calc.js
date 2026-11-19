@@ -436,5 +436,84 @@ const CALC_TYPES = [
     compute: (v) => [
       { label: '合计', expr: `${v.n}`, val: fx(v.n) }
     ]
+  },
+  {
+    id: 't-subgrade', name: '路基填方（断面法）', major: '交通运输', unit: 'm³',
+    code: 'JTG/T 3832', codeName: '路基土方', price: 18,
+    inputs: [
+      { k: 'B', label: '路基顶宽', unit: 'm', def: 12 },
+      { k: 'h', label: '填土高度', unit: 'm', def: 3 },
+      { k: 'm', label: '边坡系数（1:m）', unit: '', def: 1.5 },
+      { k: 'L', label: '路段长度', unit: 'm', def: 200 }
+    ],
+    formula: 'A = (B ＋ m×h) × h；V = A × L',
+    rule: '公路路基土石方按设计断面面积乘长度计算。梯形断面平均宽度＝顶宽＋边坡系数×填高。',
+    quota: '套《公路工程预算定额》（JTG/T 3832-2018）路基土方子目，按土类、运距、压实要求分档。',
+    tip: '填方按压实方计量；挖方按自然方，两者不能直接相加。',
+    compute: (v) => {
+      const A = (v.B + v.m * v.h) * v.h;
+      return [
+        { label: '断面面积', expr: `(${v.B}＋${v.m}×${v.h})×${v.h}`, val: fx(A) },
+        { label: '合计（压实方）', expr: `${fx(A)}×${v.L}`, val: fx(A * v.L) }
+      ];
+    }
+  },
+  {
+    id: 't-pavement', name: '沥青路面面积', major: '交通运输', unit: 'm²',
+    code: 'JTG/T 3832', codeName: '沥青混凝土面层', price: 95,
+    inputs: [
+      { k: 'L', label: '路段长度', unit: 'm', def: 200 },
+      { k: 'W', label: '路面宽度', unit: 'm', def: 11 },
+      { k: 't', label: '面层厚度', unit: 'cm', def: 6 }
+    ],
+    formula: 'S = L × W',
+    rule: '公路路面面层、基层、垫层分层按面积 m² 计算，厚度写进项目特征或定额子目，不乘厚度。',
+    quota: '沥青混凝土面层按面积套定额，厚度不同套不同子目；透层、粘层、封层另按面积计。',
+    tip: '面积只乘长×宽，厚度用来选定额子目和算材料，不参与面积计算。',
+    compute: (v) => [
+      { label: '面层面积', expr: `${v.L}×${v.W}`, val: fx(v.L * v.W) },
+      { label: '混合料体积（参考）', expr: `${fx(v.L * v.W)}×${v.t / 100}`, val: fx(v.L * v.W * v.t / 100) }
+    ]
+  },
+  {
+    id: 'h-canal', name: '渠道土方（梯形断面）', major: '水利', unit: 'm³',
+    code: '水利预算定额', codeName: '渠道土方开挖', price: 22,
+    inputs: [
+      { k: 'b', label: '渠底宽', unit: 'm', def: 3 },
+      { k: 'h', label: '挖深', unit: 'm', def: 2 },
+      { k: 'm', label: '边坡系数（1:m）', unit: '', def: 1.5 },
+      { k: 'L', label: '渠道长度', unit: 'm', def: 500 }
+    ],
+    formula: 'A = (b ＋ m×h) × h；V = A × L',
+    rule: '水利土石方按 m³ 计算，按自然方计量；回填、弃料另列，注意自然方/压实方/松方换算。',
+    quota: '套《水利建筑工程预算定额》渠道土方开挖子目，按土类与施工方法分档。',
+    tip: '渠道断面是梯形，别按矩形 b×h 算，漏掉两侧边坡的土方。',
+    compute: (v) => {
+      const A = (v.b + v.m * v.h) * v.h;
+      return [
+        { label: '断面面积', expr: `(${v.b}＋${v.m}×${v.h})×${v.h}`, val: fx(A) },
+        { label: '合计（自然方）', expr: `${fx(A)}×${v.L}`, val: fx(A * v.L) }
+      ];
+    }
+  },
+  {
+    id: 'h-dam', name: '重力坝坝体混凝土', major: '水利', unit: 'm³',
+    code: '水利预算定额', codeName: '坝体混凝土', price: 620,
+    inputs: [
+      { k: 'B', label: '坝底宽', unit: 'm', def: 30 },
+      { k: 'H', label: '坝高', unit: 'm', def: 40 },
+      { k: 'L', label: '坝顶长度', unit: 'm', def: 120 }
+    ],
+    formula: 'A = B × H ÷ 2（三角形断面）；V = A × L',
+    rule: '重力坝断面接近三角形，按断面面积乘坝长计算混凝土体积；接缝灌浆、温控另计。',
+    quota: '套水利预算定额坝体混凝土子目，按坝型、混凝土强度与浇筑方式分档。',
+    tip: '这是简化三角形估算；实际断面有坝顶宽度和下游折坡，考试给断面图就按图分块算。',
+    compute: (v) => {
+      const A = v.B * v.H / 2;
+      return [
+        { label: '断面面积', expr: `${v.B}×${v.H}÷2`, val: fx(A) },
+        { label: '合计', expr: `${fx(A)}×${v.L}`, val: fx(A * v.L) }
+      ];
+    }
   }
 ];

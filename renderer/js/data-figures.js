@@ -330,5 +330,124 @@ const CH_FIGURES = {
       { c: '#4b7d8c', t: '规费：按费率计取' },
       { c: '#4fd2e6', t: '税金：增值税 9%' }
     ]
+  },
+
+  ch10: {
+    title: '公路横断面：一条路的结构',
+    note: '从下往上数：路基 → 垫层 → 基层 → 面层，车轮荷载最后落到路基上。',
+    svg: `
+<svg viewBox="0 0 320 150" xmlns="http://www.w3.org/2000/svg">
+  <path d="M40 132 L80 100 L240 100 L280 132 Z" fill="#6b5a44"/>
+  <rect x="80" y="92" width="160" height="8" fill="#8a7558"/>
+  <rect x="84" y="84" width="152" height="8" fill="#7d95a8"/>
+  <rect x="88" y="76" width="144" height="8" fill="#3b4a58"/>
+  <path d="M40 132 L80 100" stroke="#c98b3c" stroke-width="1.4"/>
+  <path d="M280 132 L240 100" stroke="#c98b3c" stroke-width="1.4"/>
+  <text x="150" y="72" font-size="9" fill="#f0b25e" text-anchor="middle">面层 · 基层 · 垫层</text>
+  <text x="150" y="146" font-size="8.5" fill="#7d95a8" text-anchor="middle">路基（填方 / 挖方）</text>
+  <text x="52" y="112" font-size="7.5" fill="#c98b3c">1:1.5</text>
+  <text x="252" y="112" font-size="7.5" fill="#c98b3c">1:1.5</text>
+  <line x1="286" y1="118" x2="286" y2="132" stroke="#4fd2e6" stroke-width="3"/>
+  <text x="298" y="130" font-size="7" fill="#4fd2e6">排水沟</text>
+</svg>`,
+    legend: [
+      { c: '#3b4a58', t: '面层：直接承受车轮荷载，耐磨防滑' },
+      { c: '#7d95a8', t: '基层：承重并把力传给路基' },
+      { c: '#8a7558', t: '垫层：排水、找平、防冻' },
+      { c: '#6b5a44', t: '路基：填方或挖方，边坡常用 1:1.5' },
+      { c: '#4fd2e6', t: '排水沟：路面与路基的排水设施' }
+    ]
+  },
+
+  ch11: {
+    title: '公路造价“五算”与编制依据',
+    note: '概算是最高限额，预算和结算一般不能突破概算。',
+    svg: `
+<svg viewBox="0 0 320 150" xmlns="http://www.w3.org/2000/svg">
+  <text x="160" y="26" font-size="10" fill="#f0b25e" text-anchor="middle">公路工程造价文件的五个阶段</text>
+  <g font-size="8" fill="#cfe0ec" text-anchor="middle">
+    <rect x="10" y="44" width="56" height="28" rx="3" fill="#c98b3c" fill-opacity="0.22" stroke="#c98b3c"/>
+    <text x="38" y="62">投资估算</text>
+    <rect x="72" y="44" width="56" height="28" rx="3" fill="#8fa3b4" fill-opacity="0.22" stroke="#8fa3b4"/>
+    <text x="100" y="62">设计概算</text>
+    <rect x="134" y="44" width="56" height="28" rx="3" fill="#4b7d8c" fill-opacity="0.25" stroke="#4b7d8c"/>
+    <text x="162" y="62">施工图预算</text>
+    <rect x="196" y="44" width="56" height="28" rx="3" fill="#4fd2e6" fill-opacity="0.2" stroke="#4fd2e6"/>
+    <text x="224" y="62">招标控制价</text>
+    <rect x="258" y="44" width="52" height="28" rx="3" fill="#6f8fa4" fill-opacity="0.25" stroke="#6f8fa4"/>
+    <text x="284" y="62">竣工结算</text>
+  </g>
+  <g stroke="#7d95a8" stroke-width="1">
+    <line x1="66" y1="58" x2="71" y2="58"/><line x1="128" y1="58" x2="133" y2="58"/>
+    <line x1="190" y1="58" x2="195" y2="58"/><line x1="252" y1="58" x2="257" y2="58"/>
+  </g>
+  <text x="160" y="92" font-size="8.5" fill="#f0b25e" text-anchor="middle">概算 = 最高限额</text>
+  <text x="160" y="110" font-size="8" fill="#cfe0ec" text-anchor="middle">依据：JTG 3830-2018 编规 ＋ JTG/T 3832-2018 预算定额</text>
+  <text x="160" y="126" font-size="8" fill="#7d95a8" text-anchor="middle">交通专业不走 GB/T 50854-2024 房建清单</text>
+  <text x="160" y="142" font-size="8" fill="#7d95a8" text-anchor="middle">计量口诀：断面×长度、面积×层数</text>
+</svg>`,
+    legend: [
+      { c: '#c98b3c', t: '投资估算：立项决策阶段' },
+      { c: '#8fa3b4', t: '设计概算：最高限额' },
+      { c: '#4b7d8c', t: '施工图预算：招标前编制' },
+      { c: '#4fd2e6', t: '招标控制价：最高投标限价' },
+      { c: '#6f8fa4', t: '竣工结算：实际结算价' }
+    ]
+  },
+
+  ch12: {
+    title: '重力坝剖面：自重抗滑',
+    note: '上游挡水、下游放坡，坝基做帷幕灌浆和排水，减小扬压力。',
+    svg: `
+<svg viewBox="0 0 320 150" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="46" width="80" height="86" fill="#2f6f8f" opacity="0.45"/>
+  <path d="M90 34 L180 34 L240 132 L90 132 Z" fill="#8a8f96"/>
+  <rect x="90" y="34" width="90" height="10" fill="#b9bec4"/>
+  <line x1="90" y1="34" x2="90" y2="132" stroke="#cfe0ec" stroke-width="1"/>
+  <line x1="90" y1="122" x2="240" y2="122" stroke="#5b6168" stroke-width="1" stroke-dasharray="4 3"/>
+  <line x1="102" y1="122" x2="102" y2="144" stroke="#c98b3c" stroke-width="3"/>
+  <line x1="118" y1="122" x2="118" y2="144" stroke="#c98b3c" stroke-width="3"/>
+  <circle cx="150" cy="108" r="7" fill="#22323f" stroke="#4fd2e6" stroke-width="1"/>
+  <text x="40" y="42" font-size="8" fill="#9fd3e8">上游水位</text>
+  <text x="146" y="30" font-size="8" fill="#f0b25e">坝顶</text>
+  <text x="188" y="88" font-size="8" fill="#cfe0ec">坝体（自重）</text>
+  <text x="150" y="148" font-size="7.5" fill="#c98b3c" text-anchor="middle">帷幕灌浆</text>
+  <text x="186" y="128" font-size="7" fill="#4fd2e6">排水廊道</text>
+</svg>`,
+    legend: [
+      { c: '#8a8f96', t: '坝体：三角形断面，靠自重抗滑' },
+      { c: '#2f6f8f', t: '上游水压力：把坝往向下游推' },
+      { c: '#c98b3c', t: '帷幕灌浆：坝基防渗，减小扬压力' },
+      { c: '#4fd2e6', t: '排水廊道：汇集渗水、降低扬压力' }
+    ]
+  },
+
+  ch13: {
+    title: '水利计量的四类单位',
+    note: '先看计量单位，再看方量状态：自然方、压实方、松方不能混。',
+    svg: `
+<svg viewBox="0 0 320 150" xmlns="http://www.w3.org/2000/svg">
+  <text x="160" y="22" font-size="9.5" fill="#f0b25e" text-anchor="middle">水利工程计量单位对照</text>
+  <g font-size="8" fill="#cfe0ec">
+    <rect x="10" y="34" width="70" height="40" rx="3" fill="#c98b3c" fill-opacity="0.16" stroke="#c98b3c"/>
+    <text x="18" y="50">土石方</text><text x="18" y="66" font-size="9" fill="#f0b25e">m³</text>
+    <rect x="88" y="34" width="70" height="40" rx="3" fill="#8fa3b4" fill-opacity="0.16" stroke="#8fa3b4"/>
+    <text x="96" y="50">混凝土</text><text x="96" y="66" font-size="9" fill="#cfe0ec">m³</text>
+    <rect x="166" y="34" width="70" height="40" rx="3" fill="#4b7d8c" fill-opacity="0.2" stroke="#4b7d8c"/>
+    <text x="174" y="50">灌浆</text><text x="174" y="66" font-size="9" fill="#cfe0ec">m</text>
+    <rect x="244" y="34" width="66" height="40" rx="3" fill="#4fd2e6" fill-opacity="0.14" stroke="#4fd2e6"/>
+    <text x="252" y="50">金属结构</text><text x="252" y="66" font-size="9" fill="#4fd2e6">t / 台</text>
+  </g>
+  <text x="160" y="94" font-size="8.5" fill="#cfe0ec" text-anchor="middle">钢筋按 t、模板按 m²、隧道按延米</text>
+  <text x="160" y="112" font-size="8.5" fill="#c98b3c" text-anchor="middle">自然方 ⇄ 压实方 ⇄ 松方：套定额前先换算</text>
+  <text x="160" y="130" font-size="8" fill="#7d95a8" text-anchor="middle">依据：水利工程设计概（估）算编制规定 + 水利建筑工程预算定额</text>
+  <text x="160" y="144" font-size="8" fill="#7d95a8" text-anchor="middle">临时工程（导流、围堰）单独列项，别漏</text>
+</svg>`,
+    legend: [
+      { c: '#c98b3c', t: '土石方：按 m³，注意三种方量状态' },
+      { c: '#8fa3b4', t: '混凝土：按 m³，钢筋另按 t' },
+      { c: '#4b7d8c', t: '灌浆：按 m，钻孔与灌浆分列' },
+      { c: '#4fd2e6', t: '金属结构：闸门、启闭机按 t 或台' }
+    ]
   }
 };

@@ -296,17 +296,16 @@ function closeDetail() {
 let calcVals = {};
 let calcHistory = [];
 function renderCalcView() {
-  const groups = { '土建': [], '安装': [] };
-  CALC_TYPES.forEach(function (t) { groups[t.major].push(t); });
+  const groups = { '土建': [], '安装': [], '交通运输': [], '水利': [] };
+  CALC_TYPES.forEach(function (t) { (groups[t.major] = groups[t.major] || []).push(t); });
   const sel = document.getElementById('calc-type');
   if (!sel.dataset.filled) {
-    sel.innerHTML =
-      '<optgroup label="土建工程">' + groups['土建'].map(function (t) {
-        return '<option value="' + t.id + '">' + t.name + '</option>';
-      }).join('') + '</optgroup>' +
-      '<optgroup label="安装工程">' + groups['安装'].map(function (t) {
+    const labels = { '土建': '土建工程', '安装': '安装工程', '交通运输': '交通运输工程', '水利': '水利工程' };
+    sel.innerHTML = Object.keys(groups).filter(function (k) { return groups[k].length; }).map(function (k) {
+      return '<optgroup label="' + labels[k] + '">' + groups[k].map(function (t) {
         return '<option value="' + t.id + '">' + t.name + '</option>';
       }).join('') + '</optgroup>';
+    }).join('');
     sel.dataset.filled = '1';
   }
   renderCalcForm();
@@ -433,13 +432,15 @@ function chapterProgress(ch) {
 }
 
 let chFilter = 'all';
-const CH_BOOK = { civil: '土建计量', mep: '安装计量', cost: '计价/案例' };
+const CH_BOOK = { civil: '土建计量', mep: '安装计量', trans: '交通运输计量', hydro: '水利计量', cost: '计价/案例' };
 
 function renderChapters() {
   const groups = [
     { k: 'all', label: '全部' },
-    { k: 'civil', label: '土建计量' },
-    { k: 'mep', label: '安装计量' },
+    { k: 'civil', label: '土建' },
+    { k: 'mep', label: '安装' },
+    { k: 'trans', label: '交通运输' },
+    { k: 'hydro', label: '水利' },
     { k: 'cost', label: '计价 / 案例' }
   ];
   const tabs = groups.map(function (g) {
@@ -457,7 +458,8 @@ function renderChapters() {
     const pr = chapterProgress(ch);
     const done = state.chapterDone[ch.id];
     return '<div class="ch-card" data-ch="' + ch.id + '">' +
-      '<div class="ch-head"><div class="ch-no">' + (ch.book === '安装计量' ? '安' : ch.book === '计价/案例' ? '价' : '土') + '</div>' +
+      '<div class="ch-head"><div class="ch-no">' +
+      (ch.book === '安装计量' ? '安' : ch.book === '交通运输计量' ? '交' : ch.book === '水利计量' ? '水' : ch.book === '计价/案例' ? '价' : '土') + '</div>' +
       '<div class="ch-title"><h3>' + ch.title + '</h3><p>' + ch.book + ' · 第 ' + ch.order + ' 章</p></div>' +
       '<div class="ch-right">' + (done ? '<span class="tag-ok">已通关</span>' : '<span class="tag-todo">未通关</span>') +
       '<div class="ch-bar"><i style="width:' + pr.pct + '%"></i></div><em>' + pr.done + '/' + pr.total + '</em></div></div>' +
