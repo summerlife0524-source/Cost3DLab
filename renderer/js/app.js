@@ -2,9 +2,24 @@
    app.js  界面与学习逻辑
    ============================================================ */
 
-const COMPONENTS = CIVIL_COMPS.concat(MEP_COMPS);
+const COMPONENTS = CIVIL_COMPS.concat(MEP_COMPS).concat(TRANS_COMPS || []).concat(HYDRO_COMPS || []);
 const COMP_MAP = {};
 COMPONENTS.forEach(function (c) { COMP_MAP[c.id] = c; });
+COMPONENTS.forEach(function (c) { if (!c.scene) c.scene = 'building'; });
+
+function majorKey(major) {
+  if (major === '安装') return 'mep';
+  if (major === '交通运输') return 'trans';
+  if (major === '水利') return 'hydro';
+  return 'civ';
+}
+function majorStd(comp) {
+  if (comp.std) return comp.std;
+  if (comp.major === '安装') return 'GB/T 50856-2024';
+  if (comp.major === '交通运输') return 'JTG 3830 / 3832-2018';
+  if (comp.major === '水利') return '水利部编规 + 水利预算定额';
+  return 'GB/T 50854-2024';
+}
 
 const CH_MAP = {};
 CHAPTERS.forEach(function (c) { CH_MAP[c.id] = c; });
@@ -132,7 +147,7 @@ function renderQuiz(q, showNumber, n) {
 }
 
 function buildKnowledgeHTML(comp) {
-  const majorCls = comp.major === '安装' ? 'mep' : 'civ';
+  const majorCls = majorKey(comp.major);
   const ch = CH_MAP[comp.chapter];
   const mastered = isMastered(comp.id);
   const points = comp.points.map(function (p) { return '<li>' + p + '</li>'; }).join('');
@@ -151,7 +166,7 @@ function buildKnowledgeHTML(comp) {
     '<div class="kb-head ' + majorCls + '">' +
     '<div class="kb-tags"><span class="tag-major">' + comp.major + '</span>' +
     '<span class="tag-ch">' + (ch ? ch.title : '') + '</span>' +
-    '<span class="tag-std">' + (comp.major === '安装' ? 'GB/T 50856-2024' : 'GB/T 50854-2024') + '</span>' +
+    '<span class="tag-std">' + majorStd(comp) + '</span>' +
     (isMastered(comp.id) ? '<span class="tag-ok">已掌握</span>' : '<span class="tag-todo">待掌握</span>') +
     '</div>' +
     '<h2>' + comp.name + '</h2>' +
@@ -174,24 +189,82 @@ function buildKnowledgeHTML(comp) {
     '</div></div></div>';
 }
 
+const SCENES = {
+  building: {
+    name: '房建小楼',
+    title: '点一下模型，开始学习',
+    desc: '这是一栋两层框架小楼：地下有独立基础，墙里有柱子，屋面上有防水，管道、桥架、风管、消火栓都按真实施工位置摆放。',
+    quick: ['foundation', 'column', 'stair', 'roof', 'waterpipe', 'cabletray', 'insulation', 'airduct'],
+    foot: '建议路径：先点“独立基础 → 柱 → 梁 → 板”把结构走一遍，再点“管道 → 桥架 → 风管 → 保温”进安装。'
+  },
+  highway: {
+    name: '公路工程',
+    title: '一条路，从路基到桥隧',
+    desc: '这段路包含填方路基、三层路面、跨河小桥、穿过路基的圆管涵、隧道洞门、边沟和波形梁护栏，正好对应公路五大组成。',
+    quick: ['hw-subgrade', 'hw-pavement', 'hw-bridge', 'hw-culvert', 'hw-tunnel', 'hw-drain', 'hw-guard'],
+    foot: '建议路径：路基 → 路面（看三层结构）→ 桥 → 涵 → 隧 → 边沟 → 护栏，把一条路的钱一笔笔走完。'
+  },
+  water: {
+    name: '水利枢纽',
+    title: '一座坝，从挡水到泄洪',
+    desc: '重力坝靠自重挡水，旁边溢洪道泄洪，闸门控制下泄，下游渠道输水，压力钢管引水，上游还有临时围堰。',
+    quick: ['wt-dam', 'wt-spillway', 'wt-gate', 'wt-canal', 'wt-penstock', 'wt-coffer'],
+    foot: '建议路径：坝体 → 溢洪道 → 闸门 → 渠道 → 压力钢管 → 围堰，重点记“哪些按 m³、哪些按 t、哪些按 m”。'
+  }
+};
+let currentScene = 'building';
+
 function renderWelcome() {
-  const quick = ['foundation', 'column', 'stair', 'roof', 'waterpipe', 'cabletray', 'insulation', 'airduct']
-    .map(function (id) {
-      const c = COMP_MAP[id];
-      return '<button class="qchip" data-goto="' + id + '">' + c.name + '</button>';
-    }).join('');
+  const s = SCENES[currentScene] || SCENES.building;
+  const quick = s.quick.map(function (id) {
+    const c = COMP_MAP[id];
+    if (!c) return '';
+    return '<button class="qchip" data-goto="' + id + '">' + c.name.replace(/（[^）]*）/g, '') + '</button>';
+  }).join('');
   const li = levelInfo();
   document.getElementById('panel-kb').innerHTML =
     '<div class="welcome">' +
-    '<h2>点一下模型，开始学习</h2>' +
-    '<p>这是一栋两层框架小楼：地下有独立基础，墙里有柱子，屋面上有防水，管道、桥架、风管、消火栓都按真实施工位置摆放。</p>' +
+    '<h2>' + s.title + '</h2>' +
+    '<p>' + s.desc + '</p>' +
     '<p class="hintline">左键旋转 · 滚轮缩放 · 右键平移 · 点击构件看知识卡</p>' +
     '<div class="wquick">' + quick + '</div>' +
     '<div class="wstats"><div><b>' + masteredCount() + '</b><span>已掌握构件</span></div>' +
     '<div><b>' + Object.keys(state.viewed).length + '</b><span>已浏览</span></div>' +
     '<div><b>Lv.' + li.lv + '</b><span>当前等级</span></div></div>' +
-    '<p class="wfoot">建议路径：先点“独立基础 → 柱 → 梁 → 板”把结构走一遍，再点“管道 → 桥架 → 风管 → 保温”进安装。</p>' +
+    '<p class="wfoot">' + s.foot + '</p>' +
     '</div>';
+}
+
+function sceneComps(key) {
+  return COMPONENTS.filter(function (c) { return c.scene === key; });
+}
+
+function renderModelList() {
+  const list = document.getElementById('model-list');
+  if (!list) return;
+  list.innerHTML = sceneComps(currentScene).map(function (c) {
+    return '<button class="mv-item" data-comp="' + c.id + '"><span class="mv-ic ' + majorKey(c.major) + '">' + c.icon + '</span>' + (c.short || c.name.replace(/（[^）]*）/g, '')) + '</button>';
+  }).join('');
+}
+
+function switchScene(key, silent) {
+  if (!SCENES[key] || key === currentScene) return;
+  currentScene = key;
+  Lab.setScene(key);
+  document.querySelectorAll('.scene-tab').forEach(function (b) {
+    b.classList.toggle('on', b.dataset.scene === key);
+  });
+  const isBuilding = key === 'building';
+  ['btn-cut', 'btn-scaffold'].forEach(function (id) {
+    const b = document.getElementById(id);
+    if (!b) return;
+    b.disabled = !isBuilding;
+    b.classList.toggle('off', !isBuilding);
+    if (!isBuilding) b.classList.remove('on');
+  });
+  renderModelList();
+  closeDetail();
+  if (!silent) renderWelcome();
 }
 
 function selectComponent(id) {
@@ -203,10 +276,11 @@ function selectComponent(id) {
   }
   const c = COMP_MAP[id];
   if (!c) return;
+  if (c.scene && c.scene !== currentScene) switchScene(c.scene, true);
   if (!state.viewed[id]) { state.viewed[id] = 1; addXp(4); }
   Lab.select(id);
-  // 看安装构件、楼梯、楼地面防水时自动剖切，露出内部
-  if (c.major === '安装' || id === 'stair' || id === 'waterproof') {
+  // 看安装构件、楼梯、楼地面防水时自动剖切，露出内部（只对房建模型有效）
+  if (currentScene === 'building' && (c.major === '安装' || id === 'stair' || id === 'waterproof')) {
     Lab.setCut(true);
     document.getElementById('btn-cut').classList.add('on');
   }
@@ -264,11 +338,13 @@ function renderLibrary() {
     const cards = COMPONENTS.filter(function (c) {
       if (libFilter === 'civ') return c.major === '土建';
       if (libFilter === 'mep') return c.major === '安装';
+      if (libFilter === 'trans') return c.major === '交通运输';
+      if (libFilter === 'hydro') return c.major === '水利';
       if (libFilter === 'mastered') return isMastered(c.id);
       return true;
     }).map(function (c) {
       const m = isMastered(c.id) ? '<span class="card-ok">已掌握</span>' : '<span class="card-dot"></span>';
-      const tag = c.major === '安装' ? 'mep' : 'civ';
+      const tag = majorKey(c.major);
       return '<button class="lib-card ' + tag + '" data-detail="' + c.id + '">' +
         '<div class="lib-top"><span class="lib-icon">' + c.icon + '</span>' + m + '</div>' +
         '<h3>' + c.name + '</h3>' +
@@ -700,7 +776,12 @@ document.addEventListener('click', function (e) {
   }
 
   const focusBtn = e.target.closest('[data-focus]');
-  if (focusBtn) { Lab.focus(focusBtn.dataset.focus); return; }
+  if (focusBtn) {
+    const fc = COMP_MAP[focusBtn.dataset.focus];
+    if (fc && fc.scene && fc.scene !== currentScene) switchScene(fc.scene, true);
+    Lab.focus(focusBtn.dataset.focus);
+    return;
+  }
 
   const calcBtn = e.target.closest('[data-calc]');
   if (calcBtn) {
@@ -710,7 +791,9 @@ document.addEventListener('click', function (e) {
       stair: 'c-stair', roof: 'c-roof', wall: 'c-wall', cushion: 'c-cushion', earthwork: 'c-earthpit',
       reinforcement: 'c-rebar', formwork: 'c-formwork', scaffold: 'c-scaffold', backfill: 'c-backfill',
       waterproof: 'c-floor', waterpipe: 'm-pipe', drainpipe: 'm-pipe', airduct: 'm-duct-rect',
-      insulation: 'm-insul', painting: 'm-paint', cabletray: 'm-tray', hydrant: 'm-hydrant' };
+      insulation: 'm-insul', painting: 'm-paint', cabletray: 'm-tray', hydrant: 'm-hydrant',
+      'hw-subgrade': 't-subgrade', 'hw-pavement': 't-pavement',
+      'wt-canal': 'h-canal', 'wt-dam': 'h-dam' };
     const target = map[id];
     if (target) {
       const sel = document.getElementById('calc-type');
@@ -762,21 +845,11 @@ document.addEventListener('click', function (e) {
 
 /* ---------- 初始化 ---------- */
 function initUI() {
-  // 模型构件列表
-  const modelIds = ['foundation', 'cushion', 'beam', 'column', 'slab', 'wall', 'stair', 'roof', 'waterproof',
-    'door', 'earthwork', 'waterpipe', 'drainpipe', 'insulation', 'valve', 'hydrant', 'cabletray',
-    'airduct', 'distribution', 'scaffold'];
-  const shortName = {
-    foundation: '独立基础', cushion: '基础垫层', beam: '钢筋砼梁', column: '钢筋砼柱', slab: '实心楼板',
-    wall: '砌块墙', stair: '楼梯', roof: '屋面防水', waterproof: '楼地面防水', door: '门窗',
-    earthwork: '土方', waterpipe: '给水管道', drainpipe: '排水管道', insulation: '管道保温',
-    valve: '阀门', hydrant: '消火栓', cabletray: '电缆桥架', airduct: '通风管道',
-    distribution: '配电箱', scaffold: '脚手架'
-  };
-  document.getElementById('model-list').innerHTML = modelIds.map(function (id) {
-    const c = COMP_MAP[id];
-    return '<button class="mv-item" data-comp="' + id + '"><span class="mv-ic ' + (c.major === '安装' ? 'mep' : 'civ') + '">' + c.icon + '</span>' + (shortName[id] || c.name) + '</button>';
-  }).join('');
+  // 模型构件列表（按场景）
+  renderModelList();
+  document.querySelectorAll('.scene-tab').forEach(function (b) {
+    b.onclick = function () { switchScene(b.dataset.scene); };
+  });
 
   Lab.init(document.getElementById('scene'), function (id) {
     if (id) { selectComponent(id); }

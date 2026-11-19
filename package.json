@@ -1,7 +1,7 @@
 {
   "name": "cost3d-lab",
   "productName": "造价3D学堂",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "一级造价工程师土建+安装 3D 互动学习工具（GB/T 50854-2024 / GB/T 50856-2024 口径）",
   "main": "main.js",
   "author": "Doubao",
@@ -42,6 +42,7 @@
     }
   }
 }
+
 
 
 
