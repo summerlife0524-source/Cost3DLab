@@ -15,6 +15,7 @@ const Lab = (function () {
   let autoRotate = false;
   let camAnim = null;
   let onPickCb = null;
+  let onDemoCb = null;
   let onHoverCb = null;
   let sceneKey = 'building';
   const pointer = new THREE.Vector2();
@@ -87,18 +88,8 @@ const Lab = (function () {
 
   function buildBuilding() {
     // ---------- 场地与土体 ----------
-    const grid = new THREE.GridHelper(30, 30, 0x21405c, 0x152c40);
-    grid.position.y = 0.006;
-    root.add(grid);
-
-    const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(34, 34),
-      new THREE.MeshStandardMaterial({ color: 0x08131f, roughness: 1, transparent: true, opacity: 0.95, depthWrite: false })
-    );
-    plane.rotation.x = -Math.PI / 2;
-    plane.position.y = -0.02;
-    plane.receiveShadow = true;
-    root.add(plane);
+    sceneKey = 'building';
+    ground();
 
     // 土体（挖方示意，半透明）
     box('earthwork', 8.2, 1.1, 6.4, 0, -0.55, 0, C.soil, { opacity: 0.14, rough: 1, part: '土体' });
@@ -294,10 +285,12 @@ const Lab = (function () {
   }
 
   /* ---------- 场景公用 ---------- */
+  let groundPlane = null, gridHelper = null;
   function ground() {
     const grid = new THREE.GridHelper(30, 30, 0x21405c, 0x152c40);
     grid.position.y = 0.006;
     root.add(grid);
+    gridHelper = grid;
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(34, 34),
       new THREE.MeshStandardMaterial({ color: 0x08131f, roughness: 1, transparent: true, opacity: 0.95, depthWrite: false })
@@ -306,6 +299,7 @@ const Lab = (function () {
     plane.position.y = -0.02;
     plane.receiveShadow = true;
     root.add(plane);
+    groundPlane = plane;
   }
 
   function prism(id, pts, depth, zc, color, opts) {
@@ -640,7 +634,7 @@ const Lab = (function () {
       const hits = raycaster.intersectObjects(root.children, true);
       let id = null;
       for (let i = 0; i < hits.length; i++) {
-        if (hits[i].object.userData.compId) { id = hits[i].object.userData.compId; break; }
+        if (hits[i].object.userData.compId && hits[i].object.visible) { id = hits[i].object.userData.compId; break; }
       }
       if (onPickCb) onPickCb(id);
     }
@@ -672,6 +666,26 @@ const Lab = (function () {
       camera.position.lerpVectors(camAnim.fromP, camAnim.toP, e);
       controls.target.lerpVectors(camAnim.fromT, camAnim.toT, e);
       if (t >= 1) camAnim = null;
+    }
+    // 建设演示：构件生长动画 + 自动播放
+    if (demoAnims.length) {
+      for (let i = demoAnims.length - 1; i >= 0; i--) {
+        const m = demoAnims[i];
+        m.userData._demoT = (m.userData._demoT || 0) + 0.055;
+        const t = Math.min(1, m.userData._demoT);
+        const e = 1 - Math.pow(1 - t, 3);
+        const s = m.userData._s || { x: 1, y: 1, z: 1 };
+        m.scale.set(s.x * (0.02 + 0.98 * e), s.y * (0.02 + 0.98 * e), s.z * (0.02 + 0.98 * e));
+        if (t >= 1) { m.scale.copy(s); demoAnims.splice(i, 1); }
+      }
+    }
+    if (demoMode && demoPlaying) {
+      const dur = (demoStages[demoIndex] && demoStages[demoIndex].dur || 2.2) * 1000;
+      if (performance.now() - demoLast > dur) {
+        if (demoIndex + 1 < demoStages.length) demoGo(demoIndex + 1, true);
+        else demoPause();
+        if (onDemoCb) onDemoCb(demoInfo());
+      }
     }
     if (renderer) {
       renderer.render(scene, camera);
@@ -768,6 +782,169 @@ const Lab = (function () {
 
   function setAutoRotate(on) { autoRotate = on; }
 
+  /* ---------- 从 0 到 1 建设过程演示 ---------- */
+  let demoMode = false, demoStages = [], demoIndex = -1, demoPlaying = false;
+  let demoLast = 0, demoAnims = [], demoLabelsBefore = true;
+
+  const DEMO_PLAN = {
+    building: [
+      { name: '土方开挖', desc: '按垫层底＋工作面放线，挖到设计标高。清单按垂直开挖算，放坡只进定额。', ids: ['earthwork'], dur: 2.4 },
+      { name: '垫层浇筑', desc: '基坑底浇 C15 素混凝土垫层，每边比基础宽出 100~300mm，给基础找平。', ids: ['cushion'], dur: 2.2 },
+      { name: '独立基础', desc: '支模、绑钢筋、浇 C30 混凝土。基础是埋在地下的“脚”，算量按 m³。', ids: ['foundation'], dur: 2.4 },
+      { name: '基础联系梁', desc: '把各个独立基础连成整体，抵抗不均匀沉降。清单 010502005。', ids: ['beam'], parts: ['基础梁'], dur: 2.2 },
+      { name: '基础回填', desc: '基础验收后分层回填夯实。回填量＝挖方－地坪以下埋设体积。', ids: ['backfill'], dur: 2.2 },
+      { name: '柱钢筋', desc: '柱钢筋笼：4 根竖筋＋箍筋。钢筋按 t 计，清单 010506 系列。', ids: ['reinforcement'], dur: 2.2 },
+      { name: '框架柱', desc: '支模、浇混凝土。柱高从基础顶算到楼板顶，梁柱交接处算给柱。', ids: ['column'], dur: 2.6 },
+      { name: '梁和楼板', desc: '2024 取消“有梁板”：梁算全高、板算到梁侧面，分别列项。', ids: ['beam', 'slab'], parts: ['楼面梁', '屋面梁'], dur: 2.8 },
+      { name: '砌体墙', desc: '砌块填充墙，扣门窗洞口和嵌入墙内的柱、梁。', ids: ['wall'], dur: 2.6 },
+      { name: '门窗安装', desc: '门窗按洞口面积 m² 计，不按框外围。', ids: ['door'], dur: 2.2 },
+      { name: '屋面防水', desc: 'SBS 卷材＋保温，女儿墙上翻 300mm 并入屋面防水面积。', ids: ['roof', 'waterproof'], dur: 2.4 },
+      { name: '机电安装', desc: '给排水、消防、桥架、风管、保温：管道按 m、风管按 m²、绝热按 m³。', ids: ['waterpipe', 'drainpipe', 'insulation', 'hydrant', 'valve', 'cabletray', 'airduct', 'distribution'], dur: 3.0 },
+      { name: '脚手架（措施）', desc: '主体施工的脚手架属措施项目，2024 按“项”自主报价。', ids: ['scaffold'], dur: 2.0 }
+    ],
+    highway: [
+      { name: '路基', desc: '清表、挖填、压实。公路按断面方计量，挖方天然方、填方压实方。', ids: ['hw-subgrade'], dur: 2.4 },
+      { name: '排水与防护', desc: '边沟、排水沟按 m，护坡按 m²，挡墙按 m³。', ids: ['hw-drain'], dur: 2.2 },
+      { name: '路面结构层', desc: '底基层→基层→下面层→上面层，一层一层摊铺碾压，每层单独列项。', ids: ['hw-pavement'], dur: 2.6 },
+      { name: '桥梁', desc: '桩基→下部→上部→桥面，按部位分别计量。', ids: ['hw-bridge'], dur: 2.6 },
+      { name: '涵洞与隧道', desc: '圆管涵按 m，隧道按开挖与衬砌体积。', ids: ['hw-culvert', 'hw-tunnel'], dur: 2.4 },
+      { name: '安全设施', desc: '护栏按 m、标志按套、标线按 m²。', ids: ['hw-guard'], dur: 2.2 }
+    ],
+    water: [
+      { name: '围堰与导流', desc: '先做临时围堰、导流，为主体创造干地施工条件。', ids: ['wt-coffer'], dur: 2.2 },
+      { name: '坝体', desc: '混凝土重力坝分仓浇筑，按 m³ 计。', ids: ['wt-dam'], dur: 2.4 },
+      { name: '溢洪道', desc: '开敞式溢洪道，混凝土按 m³、闸门按 t。', ids: ['wt-spillway'], dur: 2.2 },
+      { name: '闸门与启闭机', desc: '金属结构按 t，启闭机按台。', ids: ['wt-gate'], dur: 2.2 },
+      { name: '渠道', desc: '渠道土方按断面法，衬砌按 m³、模板按 m²。', ids: ['wt-canal'], dur: 2.2 },
+      { name: '压力钢管', desc: '钢管按 t，注意防腐与镇墩。', ids: ['wt-penstock'], dur: 2.0 }
+    ]
+  };
+
+  function demoMeshes(stage) {
+    let out = [];
+    stage.ids.forEach(function (id) {
+      (meshIndex[id] || []).forEach(function (m) {
+        if (!stage.parts || stage.parts.indexOf(m.userData.part) >= 0) out.push(m);
+      });
+    });
+    return out;
+  }
+
+  function ensureScale(m) {
+    if (!m.userData._s) m.userData._s = m.scale.clone();
+    return m.userData._s;
+  }
+
+  function revealStage(i, animate) {
+    const st = demoStages[i];
+    if (!st) return;
+    if (st.ids.indexOf('scaffold') >= 0 && root.userData.scaffold) root.userData.scaffold.visible = true;
+    demoMeshes(st).forEach(function (m) {
+      m.visible = true;
+      if (animate !== false) {
+        if (!m.userData._s) m.userData._s = m.scale.clone();
+        m.scale.set(0.02, 0.02, 0.02);
+        m.userData._demoT = 0;
+        if (demoAnims.indexOf(m) < 0) demoAnims.push(m);
+      }
+    });
+  }
+
+  function hideStage(i) {
+    const st = demoStages[i];
+    if (!st) return;
+    if (st.ids.indexOf('scaffold') >= 0 && root.userData.scaffold) root.userData.scaffold.visible = false;
+    demoMeshes(st).forEach(function (m) {
+      m.visible = false;
+      const s = ensureScale(m);
+      m.scale.copy(s);
+      const k = demoAnims.indexOf(m);
+      if (k >= 0) demoAnims.splice(k, 1);
+    });
+  }
+
+  function demoStart() {
+    if (sceneKey !== 'building' && sceneKey !== 'highway' && sceneKey !== 'water') return null;
+    demoStages = DEMO_PLAN[sceneKey] || [];
+    demoMode = true; demoIndex = -1; demoPlaying = false; demoAnims = [];
+    demoLabelsBefore = showLabels;
+    setLabels(false);
+    if (groundPlane && sceneKey === 'building') groundPlane.visible = false;
+    Object.keys(meshIndex).forEach(function (id) {
+      meshIndex[id].forEach(function (m) { m.visible = false; const s = ensureScale(m); m.scale.copy(s); });
+    });
+    if (root.userData.scaffold) root.userData.scaffold.visible = false;
+    if (cutMode) setCut(false);
+    autoRotate = false;
+    // 让地下部分看得清：土方半透明加深
+    (meshIndex['earthwork'] || []).forEach(function (m) {
+      if (!m.userData._op) m.userData._op = m.material.opacity;
+      m.material.transparent = true;
+      m.material.opacity = 0.34;
+    });
+    demoFly([9.0, 3.6, 9.0], [0, -0.4, 0]);
+    demoGo(0, false);
+    select(null);
+    return demoInfo();
+  }
+
+  function demoFly(p, t) {
+    camAnim = {
+      t: 0,
+      fromP: camera.position.clone(),
+      fromT: controls.target.clone(),
+      toP: new THREE.Vector3(p[0], p[1], p[2]),
+      toT: new THREE.Vector3(t[0], t[1], t[2])
+    };
+  }
+
+  function demoGo(i, animate) {
+    if (!demoMode) return null;
+    const n = demoStages.length;
+    i = Math.max(0, Math.min(n - 1, i));
+    if (i > demoIndex) {
+      for (let k = demoIndex + 1; k <= i; k++) revealStage(k, animate);
+    } else if (i < demoIndex) {
+      for (let k = demoIndex; k > i; k--) hideStage(k);
+      // 回到前面时把当前这一步补显（可能刚才被隐藏）
+      revealStage(i, false);
+    }
+    const prev = demoIndex;
+    demoIndex = i;
+    demoLast = performance.now();
+    if (sceneKey === 'building') {
+      if (prev < 6 && i >= 6) { if (groundPlane) groundPlane.visible = true; demoFly([14.5, 9.5, 17], [0, 3.2, 0]); }
+      if (prev >= 6 && i < 6) { if (groundPlane) groundPlane.visible = false; demoFly([9.0, 3.6, 9.0], [0, -0.4, 0]); }
+    }
+    return demoInfo();
+  }
+
+  function demoPlay() { if (!demoMode) return null; demoPlaying = true; demoLast = performance.now(); return demoInfo(); }
+  function demoPause() { demoPlaying = false; return demoInfo(); }
+
+  function demoExit() {
+    if (!demoMode) return null;
+    demoMode = false; demoPlaying = false; demoAnims = [];
+    if (groundPlane) groundPlane.visible = true;
+    (meshIndex['earthwork'] || []).forEach(function (m) {
+      if (m.userData._op) m.material.opacity = m.userData._op;
+    });
+    Object.keys(meshIndex).forEach(function (id) {
+      meshIndex[id].forEach(function (m) { m.visible = true; const s = ensureScale(m); m.scale.copy(s); });
+    });
+    if (root.userData.scaffold) root.userData.scaffold.visible = showScaffold;
+    setLabels(demoLabelsBefore);
+    return { scene: sceneKey };
+  }
+
+  function demoInfo() {
+    return {
+      on: demoMode, playing: demoPlaying, index: demoIndex,
+      stages: demoStages.map(function (s) { return { name: s.name, desc: s.desc }; })
+    };
+  }
+
+
   function resetView() {
     const ps = CAM_PRESET[sceneKey] || CAM_PRESET.building;
     camAnim = {
@@ -820,6 +997,9 @@ const Lab = (function () {
     selectedId = null;
     hoverId = null;
     cutMode = false;
+    demoMode = false;
+    demoPlaying = false;
+    demoAnims = [];
     if (root && root.userData.scaffold) root.userData.scaffold.visible = false;
     buildScene(key);
   }
@@ -836,7 +1016,10 @@ const Lab = (function () {
   return {
     init: init, select: select, focus: focus, setCut: setCut, setLabels: setLabels,
     setScaffold: setScaffold, setAutoRotate: setAutoRotate, resetView: resetView,
-    setScene: setScene, info: screenInfo, pickAt: pickAt
+    setScene: setScene, info: screenInfo, pickAt: pickAt,
+    demoStart: demoStart, demoGo: demoGo, demoPlay: demoPlay, demoPause: demoPause,
+    demoExit: demoExit, demoInfo: demoInfo,
+    setDemoCb: function (cb) { onDemoCb = cb; }
   };
 })();
 

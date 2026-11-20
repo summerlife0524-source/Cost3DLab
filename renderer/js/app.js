@@ -215,6 +215,7 @@ const SCENES = {
   }
 };
 let currentScene = 'building';
+let demoOn = false;
 
 function renderWelcome() {
   const s = SCENES[currentScene] || SCENES.building;
@@ -249,8 +250,20 @@ function renderModelList() {
   }).join('');
 }
 
+function exitDemo() {
+  if (!demoOn) return;
+  demoOn = false;
+  const bar = document.getElementById('demo-bar');
+  if (bar) bar.hidden = true;
+  const b = document.getElementById('btn-demo');
+  if (b) b.classList.remove('on');
+  if (Lab.demoExit) Lab.demoExit();
+  renderModelList();
+}
+
 function switchScene(key, silent) {
   if (!SCENES[key] || key === currentScene) return;
+  if (demoOn) exitDemo();
   currentScene = key;
   Lab.setScene(key);
   document.querySelectorAll('.scene-tab').forEach(function (b) {
@@ -947,6 +960,68 @@ function initUI() {
     Lab.setAutoRotate(on);
   };
   document.getElementById('btn-reset').onclick = function () { Lab.resetView(); };
+
+  /* ---------- 从 0 到 1 建设演示 ---------- */
+  const demoBar = document.getElementById('demo-bar');
+  function updateDemo(info) {
+    if (!info || !info.on) return;
+    const n = info.stages.length;
+    document.getElementById('demo-step').textContent = (info.index + 1) + ' / ' + n;
+    document.getElementById('demo-name').textContent = info.stages[info.index].name;
+    document.getElementById('demo-desc').textContent = info.stages[info.index].desc;
+    const play = document.getElementById('demo-play');
+    play.textContent = info.playing ? '暂停' : '播放';
+    play.classList.toggle('on', info.playing);
+    const dots = document.getElementById('demo-dots');
+    if (dots.dataset.n !== String(n)) {
+      dots.dataset.n = String(n);
+      dots.innerHTML = info.stages.map(function (s, i) {
+        return '<button class="demo-dot" data-i="' + i + '">' + (i + 1) + '</button>';
+      }).join('');
+      dots.querySelectorAll('.demo-dot').forEach(function (b) {
+        b.onclick = function () {
+          Lab.demoPause();
+          updateDemo(Lab.demoGo(Number(b.dataset.i), true));
+        };
+      });
+    }
+    dots.querySelectorAll('.demo-dot').forEach(function (b, i) {
+      b.classList.toggle('on', i === info.index);
+      b.classList.toggle('done', i < info.index);
+    });
+  }
+  function startDemo() {
+    const info = Lab.demoStart();
+    if (!info) return;
+    demoOn = true;
+    demoBar.hidden = false;
+    document.getElementById('btn-demo').classList.add('on');
+    updateDemo(info);
+    closeDetail();
+    Lab.demoPlay();
+  }
+  Lab.setDemoCb(updateDemo);
+  document.getElementById('btn-demo').onclick = function () {
+    if (demoOn) exitDemo(); else startDemo();
+  };
+  document.getElementById('demo-exit').onclick = exitDemo;
+  document.getElementById('demo-play').onclick = function () {
+    const info = Lab.demoInfo();
+    if (info.playing) { Lab.demoPause(); updateDemo(Lab.demoInfo()); }
+    else {
+      if (info.index >= info.stages.length - 1) Lab.demoGo(0, false);
+      Lab.demoPlay();
+      updateDemo(Lab.demoInfo());
+    }
+  };
+  document.getElementById('demo-next').onclick = function () {
+    Lab.demoPause();
+    updateDemo(Lab.demoGo(Lab.demoInfo().index + 1, true));
+  };
+  document.getElementById('demo-prev').onclick = function () {
+    Lab.demoPause();
+    updateDemo(Lab.demoGo(Lab.demoInfo().index - 1, false));
+  };
 
   document.getElementById('calc-type').onchange = function () { renderCalcForm(); };
   document.getElementById('calc-form').addEventListener('input', function (e) {
