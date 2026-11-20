@@ -91,8 +91,8 @@ const Lab = (function () {
     sceneKey = 'building';
     ground();
 
-    // 土体（挖方示意，半透明）
-    box('earthwork', 8.2, 1.1, 6.4, 0, -0.55, 0, C.soil, { opacity: 0.14, rough: 1, part: '土体' });
+    // 土体（挖方示意，半透明）：比回填土带四周各宽 10cm、顶面压到地面 1cm 以下，避免与门/管/带共面
+    box('earthwork', 8.6, 1.09, 6.7, 0, -0.555, 0, C.soil, { opacity: 0.14, rough: 1, part: '土体' });
     box('earthwork', 8.2, 0.06, 6.4, 0, -1.12, 0, C.soil, { opacity: 0.35, rough: 1, part: '坑底' });
 
     // ---------- 基础 ----------
@@ -114,41 +114,44 @@ const Lab = (function () {
     cols.forEach(function (c) {
       const cx = c[0] > 0 ? 2.78 : -2.78;
       const cz = c[1] > 0 ? 1.78 : -1.78;
-      box('column', 0.4, 6.91, 0.4, cx, 3.15, cz, C.concrete2, { part: '框架柱', noReceive: true });
-      // 柱顶节点板（视觉装饰）
-      box('column', 0.5, 0.09, 0.5, cx, 6.585, cz, C.concrete, { part: '柱帽', noReceive: true });
+      box('column', 0.4, 6.75, 0.4, cx, 3.125, cz, C.concrete2, { part: '框架柱', noReceive: true });
+      // 柱顶节点板（视觉装饰，压在屋面板下，不与板顶共面）
+      box('column', 0.5, 0.1, 0.5, cx, 6.44, cz, C.concrete, { part: '柱帽', noReceive: true });
     });
 
     // ---------- 梁、板 ----------
+    // 梁顶压到板内 2cm、板面四边内收 5cm 收进墙身，杜绝任何两面共面（共面必闪）
     [3.36, 6.6].forEach(function (top, idx) {
       const yc = top - 0.25;
       [-1.8, 1.8].forEach(function (z) {
-        box('beam', 6.0, 0.51, 0.25, 0, yc, z, C.concrete, { part: idx ? '屋面梁' : '楼面梁', noReceive: true });
+        box('beam', 5.86, 0.46, 0.25, 0, yc, z, C.concrete, { part: idx ? '屋面梁' : '楼面梁', noReceive: true });
       });
       [-2.8, 2.8].forEach(function (x) {
-        box('beam', 0.25, 0.51, 3.6, x, yc, 0, C.concrete, { part: idx ? '屋面梁' : '楼面梁' });
+        box('beam', 0.25, 0.46, 3.56, x, yc, 0, C.concrete, { part: idx ? '屋面梁' : '楼面梁', noReceive: true });
       });
-      box('slab', 6.0, 0.12, 4.0, 0, top - 0.06, 0, C.concrete2, { part: idx ? '屋面板' : '楼板' });
+      box('slab', 5.9, 0.12, 3.9, 0, top - 0.06, 0, C.concrete2, { part: idx ? '屋面板' : '楼板' });
     });
 
     // ---------- 墙（可剖切） ----------
     const wallOpt = { part: '外墙', noReceive: true };
-    // 一层：z=+2 前墙（留门洞 1.2m）
-    box('wall', 4.2, 3.37, 0.2, -0.9, 1.68, 1.9, C.wall, wallOpt);
-    box('wall', 0.6, 3.37, 0.2, 2.7, 1.68, 1.9, C.wall, wallOpt);
+    // 一层：z=+2 前墙（留门洞 1.2m）；墙高 3.40，墙顶伸到二层墙体内 10cm
+    box('wall', 4.2, 3.4, 0.2, -0.9, 1.695, 1.9, C.wall, wallOpt);
+    box('wall', 0.6, 3.4, 0.2, 2.7, 1.695, 1.9, C.wall, wallOpt);
     // 一层：z=-2 后墙
-    box('wall', 6.0, 3.37, 0.2, 0, 1.68, -1.9, C.wall, wallOpt);
+    box('wall', 6.0, 3.4, 0.2, 0, 1.695, -1.9, C.wall, wallOpt);
     // 一层：x=±3 侧墙（略外移并加深，避免与前后墙、柱外表面共面产生闪烁）
-    box('wall', 0.2, 3.37, 3.7, -2.92, 1.68, 0, C.wall, wallOpt);
-    box('wall', 0.2, 3.37, 3.7, 2.92, 1.68, 0, C.wall, wallOpt);
-    // 二层（底边压在一层墙顶之上，避免两面共面）
-    box('wall', 6.0, 3.24, 0.2, 0, 4.99, 1.9, C.wall2, wallOpt);
-    box('wall', 6.0, 3.24, 0.2, 0, 4.99, -1.9, C.wall2, wallOpt);
-    box('wall', 0.2, 3.24, 3.7, -2.92, 4.99, 0, C.wall2, wallOpt);
-    box('wall', 0.2, 3.24, 3.7, 2.92, 4.99, 0, C.wall2, wallOpt);
+    box('wall', 0.2, 3.4, 3.7, -2.92, 1.695, 0, C.wall, wallOpt);
+    box('wall', 0.2, 3.4, 3.7, 2.92, 1.695, 0, C.wall, wallOpt);
+    // 二层：底边 3.30 咬进一层墙体、顶边 6.56 压进屋面板（比屋面梁顶低 2cm）；
+    // 面宽/进深都比一层缩 1cm、外皮外移 5mm，保证与一层任何一面都不共面
+    box('wall', 5.99, 3.26, 0.2, 0, 4.93, 1.905, C.wall2, wallOpt);
+    box('wall', 5.99, 3.26, 0.2, 0, 4.93, -1.905, C.wall2, wallOpt);
+    box('wall', 0.2, 3.26, 3.71, -2.925, 4.93, 0, C.wall2, wallOpt);
+    box('wall', 0.2, 3.26, 3.71, 2.925, 4.93, 0, C.wall2, wallOpt);
 
     // ---------- 门窗 ----------
-    box('door', 1.2, 2.1, 0.06, 1.8, 1.05, 1.9, C.doorWood, { part: '门' });
+    // 门扇比门洞两侧各宽 1cm，咬进墙垛，避免两侧竖缝共面闪黑线
+    box('door', 1.22, 2.1, 0.06, 1.8, 1.05, 1.9, C.doorWood, { part: '门' });
     const winOpt = { opacity: 0.62, rough: 0.35, metal: 0.08, part: '窗' };
     box('door', 1.5, 1.5, 0.05, -1.6, 1.7, -2.04, C.glass, winOpt);
     box('door', 1.5, 1.5, 0.05, 1.6, 1.7, -2.04, C.glass, winOpt);
@@ -161,37 +164,40 @@ const Lab = (function () {
     box('door', 1.3, 1.4, 0.05, 0.3, 4.9, 2.04, C.glass, winOpt);
 
     // ---------- 楼梯（直形楼梯，20 级，坡度约 32°） ----------
-    const stRise = 0.165, stTread = 0.26, stW = 1.0, stX0 = -2.5, stZ = -1.15;
+    const stRise = 0.165, stTread = 0.26, stW = 0.9, stX0 = -2.5, stZ = -1.15;
     for (let i = 0; i < 20; i++) {
       const y = stRise * (i + 1);
       box('stair', stTread + 0.02, 0.055, stW, stX0 + stTread * (i + 0.5), y - 0.028, stZ, C.stair, { rough: 0.9, part: '楼梯踏步' });
-      box('stair', 0.035, stRise, stW, stX0 + stTread * i, y - stRise / 2, stZ, C.stair, { rough: 0.9, part: '楼梯踏步' });
+      // 踢面高比踏步矮 1cm，顶面藏进踏步体内（两者等高会共面闪烁）
+      box('stair', 0.035, stRise - 0.01, stW, stX0 + stTread * i, y - 0.005 - stRise / 2, stZ, C.stair, { rough: 0.9, part: '楼梯踏步' });
     }
-    const waist = box('stair', Math.hypot(5.2, 3.3) + 0.1, 0.1, stW, stX0 + 2.6, 1.62, stZ, C.stair, { rough: 0.9, part: '梯段底板' });
+    const waist = box('stair', Math.hypot(5.2, 3.3) + 0.1, 0.1, stW - 0.04, stX0 + 2.6, 1.62, stZ, C.stair, { rough: 0.9, part: '梯段底板' });
     waist.rotation.z = -Math.atan2(3.3, 5.2);
 
     // ---------- 屋面防水 + 女儿墙 ----------
-    box('roof', 6.16, 0.04, 4.16, 0, 6.66, 0, C.roofWater, { rough: 0.5, part: '卷材防水' });
-    box('roof', 6.16, 0.42, 0.13, 0, 6.82, 2.01, C.wall2, { part: '女儿墙' });
-    box('roof', 6.16, 0.42, 0.13, 0, 6.82, -2.01, C.wall2, { part: '女儿墙' });
-    box('roof', 0.13, 0.42, 4.16, -3.01, 6.82, 0, C.wall2, { part: '女儿墙' });
-    box('roof', 0.13, 0.42, 4.16, 3.01, 6.82, 0, C.wall2, { part: '女儿墙' });
+    // 卷材压在屋面板顶面内（底面 6.585 埋进板 6.48~6.60），四周由女儿墙压边
+    box('roof', 6.02, 0.04, 4.02, 0, 6.605, 0, C.roofWater, { rough: 0.5, part: '卷材防水' });
+    box('roof', 6.02, 0.42, 0.13, 0, 6.83, 2.01, C.wall2, { part: '女儿墙' });
+    box('roof', 6.02, 0.42, 0.13, 0, 6.83, -2.01, C.wall2, { part: '女儿墙' });
+    box('roof', 0.13, 0.41, 4.02, -3.01, 6.825, 0, C.wall2, { part: '女儿墙' });
+    box('roof', 0.13, 0.41, 4.02, 3.01, 6.825, 0, C.wall2, { part: '女儿墙' });
 
     // ---------- 楼地面防水（卫生间示意） ----------
-    box('waterproof', 2.0, 0.03, 1.2, 1.5, 0.02, 1.2, 0x4fa8c8, { opacity: 0.55, rough: 0.4, part: '防水层' });
+    box('waterproof', 2.0, 0.03, 1.2, 1.5, 0.045, 1.2, 0x4fa8c8, { opacity: 0.55, rough: 0.4, part: '防水层' });
 
     // ---------- 安装：给水、排水、保温 ----------
-    cyl('waterpipe', 0.05, 6.4, 2.55, 3.2, -1.72, C.pipeWater, { metal: 0.55, rough: 0.35, part: '给水立管' });
+    // 立管离后墙内皮 10cm、离楼梯 3cm，不与墙面/踏步相贴共面
+    cyl('waterpipe', 0.05, 6.4, 2.50, 3.2, -1.70, C.pipeWater, { metal: 0.55, rough: 0.35, part: '给水立管' });
     const wq = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.8, 16), mat(C.pipeWater, { metal: 0.55, rough: 0.35 }));
     wq.rotation.z = Math.PI / 2;
-    wq.position.set(1.65, 1.0, -1.72);
+    wq.position.set(1.65, 1.0, -1.70);
     reg(wq, 'waterpipe', '给水横管');
 
-    cyl('drainpipe', 0.07, 6.4, -2.55, 3.2, -1.72, C.pipeDrain, { metal: 0.4, part: '排水立管' });
-    cyl('insulation', 0.105, 2.0, 2.55, 4.4, -1.72, C.insulation, { rough: 0.9, part: '绝热层' });
+    cyl('drainpipe', 0.07, 6.4, -2.50, 3.2, -1.72, C.pipeDrain, { metal: 0.4, part: '排水立管' });
+    cyl('insulation', 0.105, 2.0, 2.50, 4.4, -1.68, C.insulation, { rough: 0.9, part: '绝热层' });
 
     // 阀门
-    const vbox = box('valve', 0.16, 0.16, 0.16, 1.45, 1.0, -1.72, C.red, { metal: 0.3, part: '阀门' });
+    const vbox = box('valve', 0.16, 0.16, 0.16, 1.45, 1.0, -1.70, C.red, { metal: 0.3, part: '阀门' });
 
     // ---------- 安装：消防 ----------
     box('hydrant', 0.36, 0.9, 0.2, -2.55, 1.4, 1.66, C.red, { metal: 0.25, rough: 0.5, part: '消火栓箱' });
@@ -236,11 +242,12 @@ const Lab = (function () {
     sc.visible = false;
 
     // ---------- 回填方（基础坑内、房屋四周分层回填，示意半透明） ----------
+    // 四周带宽 1.0 / 进深 1.1 都收在土体内部，前后两条两端伸进左右两条体内，不留共面
     const bfOpt = { rough: 1, part: '回填土' };
     box('backfill', 1.0, 1.3, 6.2, -3.6, -0.35, 0, C.soil, bfOpt);
     box('backfill', 1.0, 1.3, 6.2, 3.6, -0.35, 0, C.soil, bfOpt);
-    box('backfill', 6.2, 1.3, 1.2, 0, -0.35, 2.6, C.soil, bfOpt);
-    box('backfill', 6.2, 1.3, 1.2, 0, -0.35, -2.6, C.soil, bfOpt);
+    box('backfill', 6.3, 1.31, 1.1, 0, -0.345, 2.6, C.soil, bfOpt);
+    box('backfill', 6.3, 1.31, 1.1, 0, -0.345, -2.6, C.soil, bfOpt);
 
     // ---------- 现浇混凝土钢筋（柱钢筋笼示意，立在基坑外侧空地） ----------
     const rb = { metal: 0.55, rough: 0.5, part: '柱钢筋' };
@@ -330,17 +337,17 @@ const Lab = (function () {
     prism('hw-subgrade', emb, 7.0, -5.5, C.soil, { rough: 0.95, part: '填方路基' });
     prism('hw-subgrade', emb, 5.6, 6.2, C.soil, { rough: 0.95, part: '填方路基' });
 
-    // 路面三层
+    // 路面三层（层与层之间各留 2cm 互咬，避免两层顶/底面完全重合）
     const segs = [{ c: -5.5, d: 7.0 }, { c: 6.2, d: 5.6 }];
     segs.forEach(function (s) {
-      box('hw-pavement', 7.2, 0.12, s.d, 0, 1.96, s.c, 0x6f7276, { rough: 0.95, part: '垫层' });
-      box('hw-pavement', 7.1, 0.18, s.d, 0, 2.11, s.c, 0x8e8a80, { rough: 0.9, part: '基层' });
-      box('hw-pavement', 7.0, 0.10, s.d, 0, 2.25, s.c, 0x2b323c, { rough: 0.8, part: '沥青面层' });
+      box('hw-pavement', 7.2, 0.12, s.d, 0, 1.955, s.c, 0x6f7276, { rough: 0.95, part: '垫层' });
+      box('hw-pavement', 7.1, 0.18, s.d, 0, 2.09, s.c, 0x8e8a80, { rough: 0.9, part: '基层' });
+      box('hw-pavement', 6.96, 0.10, s.d, 0, 2.21, s.c, 0x2b323c, { rough: 0.8, part: '沥青面层' });
     });
 
     // 桥梁：桥面 + 梁体 + 桥台 + 桥墩 + 桥面护栏
     box('hw-bridge', 7.0, 0.36, 5.6, 0, 2.12, 0.7, C.concrete2, { part: '桥面' });
-    box('hw-bridge', 7.0, 0.10, 5.6, 0, 2.35, 0.7, 0x2b323c, { rough: 0.8, part: '桥面铺装' });
+    box('hw-bridge', 7.0, 0.10, 5.6, 0, 2.33, 0.7, 0x2b323c, { rough: 0.8, part: '桥面铺装' });
     [-2.0, 2.0].forEach(function (x) {
       box('hw-bridge', 0.45, 0.5, 5.4, x, 1.8, 0.7, C.concrete, { part: '梁体' });
     });
@@ -357,13 +364,13 @@ const Lab = (function () {
     });
 
     // 涵洞（管涵穿过路基，两端露出）
-    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 13.4, 20), mat(C.concrete2, { rough: 0.9 }));
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 13.6, 20), mat(C.concrete2, { rough: 0.9 }));
     pipe.rotation.z = Math.PI / 2;
     pipe.position.set(0, 0.85, -6.6);
     reg(pipe, 'hw-culvert', '管身');
     [-6.5, 6.5].forEach(function (x) {
       box('hw-culvert', 0.4, 1.7, 1.9, x, 0.85, -6.6, C.concrete, { part: '端墙' });
-      box('hw-culvert', 0.9, 0.14, 2.3, x, 0.05, -6.6, 0x6f7276, { part: '铺底' });
+      box('hw-culvert', 0.9, 0.14, 2.3, x, 0.07, -6.6, 0x6f7276, { part: '铺底' });
     });
 
     // 隧道洞门 + 山体
@@ -413,14 +420,14 @@ const Lab = (function () {
 
     // 重力坝（三角形断面）
     prism('wt-dam', [[0, 0], [0, 4.6], [0.9, 4.6], [4.2, 0]], 10, -1.0, 0x6d675e, { rough: 0.94, part: '坝体混凝土' });
-    box('wt-dam', 1.1, 0.24, 10, 0.45, 4.72, -1.0, 0x8a8478, { part: '坝顶' });
+    box('wt-dam', 1.1, 0.24, 10, 0.45, 4.70, -1.0, 0x8a8478, { part: '坝顶' });
     box('wt-dam', 0.2, 0.5, 10, -0.05, 5.05, -1.0, 0x8a8478, { part: '防浪墙' });
     box('wt-dam', 0.7, 0.7, 0.7, 3.2, 0.7, -1.0, 0x141c23, { part: '排水廊道' });
 
     // 溢洪道：控制段 + 闸墩 + 泄槽 + 消能段（整体放在坝下游右侧，避免与坝面重叠）
     box('wt-spillway', 2.6, 0.9, 3.0, 5.6, 3.6, 7.0, 0x9a9488, { part: '控制段' });
     [4.7, 6.5].forEach(function (x) {
-      box('wt-spillway', 0.35, 1.5, 3.0, x, 4.5, 7.0, 0xa39d91, { part: '闸墩' });
+      box('wt-spillway', 0.35, 1.5, 3.1, x, 4.5, 7.0, 0xa39d91, { part: '闸墩' });
     });
     const chute = box('wt-spillway', 6.2, 0.3, 2.9, 9.6, 2.2, 7.0, 0x9a9488, { part: '泄槽' });
     chute.rotation.z = -0.48;
@@ -429,7 +436,7 @@ const Lab = (function () {
       w.rotation.z = -0.48;
     });
     box('wt-spillway', 4.0, 0.42, 3.9, 13.6, 0.3, 7.0, 0x7d776c, { part: '消力池' });
-    box('wt-spillway', 0.28, 0.8, 3.9, 15.7, 0.4, 7.0, 0x9a9488, { part: '尾坎' });
+    box('wt-spillway', 0.28, 0.8, 3.7, 15.7, 0.4, 7.0, 0x9a9488, { part: '尾坎' });
 
     // 闸门 + 启闭机（立在溢洪道控制段上）
     box('wt-gate', 0.14, 1.5, 2.4, 5.3, 4.5, 7.0, 0x4e6577, { metal: 0.55, rough: 0.45, part: '平面闸门' });
@@ -441,7 +448,7 @@ const Lab = (function () {
     // 渠道（下游输水，U 形断面：底板 + 两侧边墙）
     box('wt-canal', 6.4, 0.24, 3.0, 9.4, 0.26, -4.6, 0x879296, { part: '渠底' });
     [-1.5, 1.5].forEach(function (z) {
-      box('wt-canal', 6.4, 1.0, 0.24, 9.4, 0.75, -4.6 + z, 0x929da1, { part: '边坡衬砌' });
+      box('wt-canal', 6.2, 1.0, 0.24, 9.4, 0.75, -4.6 + z, 0x929da1, { part: '边坡衬砌' });
     });
     box('wt-canal', 6.2, 0.06, 2.7, 9.4, 0.62, -4.6, 0x24506e, { opacity: 0.45, rough: 0.35, part: '渠水' });
 
@@ -451,7 +458,7 @@ const Lab = (function () {
     pen.position.set(3.0, 1.15, -4.2);
     reg(pen, 'wt-penstock', '压力钢管');
     box('wt-penstock', 0.9, 0.9, 0.9, 0.4, 1.1, -4.2, 0x6d675e, { part: '镇墩' });
-    box('wt-penstock', 0.8, 0.7, 0.8, 5.9, 0.6, -4.2, 0x6d675e, { part: '支墩' });
+    box('wt-penstock', 0.8, 0.7, 0.8, 5.85, 0.6, -4.2, 0x6d675e, { part: '支墩' });
 
     // 下游围堰（临时工程，放在坝后右前方空地）
     prism('wt-coffer', [[13.0, 0], [16.0, 0], [15.6, 1.7], [13.4, 1.7]], 3.6, 2.4, C.soil, { rough: 0.95, opacity: 0.92, part: '围堰填筑' });
@@ -1019,7 +1026,16 @@ const Lab = (function () {
     setScene: setScene, info: screenInfo, pickAt: pickAt,
     demoStart: demoStart, demoGo: demoGo, demoPlay: demoPlay, demoPause: demoPause,
     demoExit: demoExit, demoInfo: demoInfo,
-    setDemoCb: function (cb) { onDemoCb = cb; }
+    setDemoCb: function (cb) { onDemoCb = cb; },
+    dbg: function () { return { scene: scene, camera: camera, renderer: renderer, root: root, THREE: THREE }; },
+    // 调试/截图辅助（不影响正常业务）
+    setShadows: function (on) { renderer.shadowMap.enabled = !!on; scene.traverse(function (o) { if (o.material) { o.material.needsUpdate = true; } }); },
+    setCam: function (p, t, fov) {
+      if (fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
+      camera.position.set(p[0], p[1], p[2]);
+      controls.target.set(t[0], t[1], t[2]);
+      controls.update();
+    }
   };
 })();
 
